@@ -149,23 +149,25 @@ export function WaasDashboard({ data, siteUrl, initialSection = "overview" }: { 
       />
 
       <div className={cn("flex min-h-screen flex-1 flex-col transition-all duration-300 ease-out", collapsed ? "md:ml-[78px]" : "md:ml-[280px]")}>
-        <header className="sticky top-0 z-30 flex h-20 items-center justify-between border-b border-white/60 bg-white/72 px-7 shadow-[0_10px_30px_rgba(15,23,42,0.04)] backdrop-blur-2xl">
-          <div className="min-w-0">
-            <h1 className="truncate text-xl font-semibold text-foreground">{displayName}</h1>
-            <p className="hidden text-sm text-muted-foreground md:block">{sectionCopy[activeSection]}</p>
-          </div>
-          <div className="flex items-center gap-4">
-            <button type="button" onClick={() => setActiveSection("view")} className="hidden items-center gap-2 rounded-full border border-white/70 bg-white/70 px-4 py-2 text-sm font-semibold text-foreground shadow-[0_12px_28px_rgba(15,23,42,0.08)] backdrop-blur-xl transition hover:bg-white md:inline-flex">
-              <MonitorCheck className="size-4" />
-              View website
-            </button>
-            <button type="button" className="relative flex size-10 items-center justify-center rounded-full border border-white/60 bg-white/60 text-muted-foreground shadow-sm backdrop-blur-xl transition-all duration-200 hover:bg-white hover:text-foreground">
-              <Bell className="size-5" />
-              <span className="absolute right-1.5 top-1.5 size-2 animate-pulse rounded-full bg-accent" />
-            </button>
-            <Link href="/dashboard?section=settings" className="flex size-10 items-center justify-center rounded-full border border-white/70 bg-white/70 text-xs font-semibold text-foreground shadow-sm backdrop-blur-xl transition hover:bg-white">SR</Link>
-          </div>
-        </header>
+        {activeSection !== "view" && (
+          <header className="sticky top-0 z-30 flex h-20 items-center justify-between border-b border-white/60 bg-white/72 px-7 shadow-[0_10px_30px_rgba(15,23,42,0.04)] backdrop-blur-2xl">
+            <div className="min-w-0">
+              <h1 className="truncate text-xl font-semibold text-foreground">{displayName}</h1>
+              <p className="hidden text-sm text-muted-foreground md:block">{sectionCopy[activeSection]}</p>
+            </div>
+            <div className="flex items-center gap-4">
+              <button type="button" onClick={() => setActiveSection("view")} className="hidden items-center gap-2 rounded-full border border-white/70 bg-white/70 px-4 py-2 text-sm font-semibold text-foreground shadow-[0_12px_28px_rgba(15,23,42,0.08)] backdrop-blur-xl transition hover:bg-white md:inline-flex">
+                <MonitorCheck className="size-4" />
+                View website
+              </button>
+              <button type="button" className="relative flex size-10 items-center justify-center rounded-full border border-white/60 bg-white/60 text-muted-foreground shadow-sm backdrop-blur-xl transition-all duration-200 hover:bg-white hover:text-foreground">
+                <Bell className="size-5" />
+                <span className="absolute right-1.5 top-1.5 size-2 animate-pulse rounded-full bg-accent" />
+              </button>
+              <Link href="/dashboard?section=settings" className="flex size-10 items-center justify-center rounded-full border border-white/70 bg-white/70 text-xs font-semibold text-foreground shadow-sm backdrop-blur-xl transition hover:bg-white">SR</Link>
+            </div>
+          </header>
+        )}
 
         <section className={cn("flex-1", activeSection === "view" || activeSection === "settings" ? "overflow-hidden px-0 py-0" : "overflow-auto px-7 py-7")}>
           <PublishResultNotice />
@@ -289,7 +291,10 @@ function ProjectSidebar({
                     }
                     setOpenGroups((value) => ({ ...value, [group.id]: !value[group.id] }));
                   }}
-                  className={cn("flex w-full items-center gap-5 rounded-xl px-2 py-2.5 text-sm font-semibold transition hover:bg-white/78", active ? "bg-white text-[#111827] shadow-[0_12px_30px_rgba(15,23,42,0.08)]" : "text-[#4b5563]")}
+                  className={cn(
+                    "flex w-full items-center gap-5 rounded-xl px-2 py-2.5 text-sm font-semibold transition",
+                    active ? "text-[#111827]" : "text-[#4b5563] hover:bg-white/78 hover:text-[#111827]"
+                  )}
                 >
                   <GroupIcon className="size-5 shrink-0" />
                   <span className={cn("min-w-0 flex-1 truncate transition-all duration-300", collapsed ? "w-0 overflow-hidden opacity-0" : "opacity-100")}>{group.label}</span>
@@ -1065,7 +1070,7 @@ function ViewSitePanel({ data, siteUrl }: { data: DashboardData; siteUrl: string
   } satisfies Record<typeof device, { label: string; icon: LucideIcon; width: number; chrome: string; height: string }>;
 
   return (
-    <section className="grid h-[calc(100vh-5rem)] overflow-hidden bg-[linear-gradient(180deg,#f8fafc_0%,#eef2f7_100%)] text-foreground xl:grid-cols-[minmax(0,1fr)_430px]">
+    <section className="grid h-dvh overflow-hidden bg-[linear-gradient(180deg,#f8fafc_0%,#eef2f7_100%)] text-foreground xl:grid-cols-[minmax(0,1fr)_430px]">
       <div className="flex min-h-0 min-w-0 flex-col overflow-hidden">
         <div className="flex min-h-16 flex-wrap items-center justify-between gap-3 border-b border-white/70 bg-white/72 px-5 py-3 shadow-[0_10px_30px_rgba(15,23,42,0.04)] backdrop-blur-2xl">
           <div className="flex min-w-0 items-center gap-3">
@@ -1275,7 +1280,7 @@ function WebsiteAssistantPanel({ data, previewPath, url }: { data: DashboardData
   }
 
   return (
-    <aside className="flex h-[calc(100vh-5rem)] flex-col overflow-hidden border-l border-white/70 bg-white/72 text-foreground shadow-[0_10px_40px_rgba(15,23,42,0.06)] backdrop-blur-2xl">
+    <aside className="flex h-dvh flex-col overflow-hidden border-l border-white/70 bg-white/72 text-foreground shadow-[0_10px_40px_rgba(15,23,42,0.06)] backdrop-blur-2xl">
       <div className="border-b border-white/70 p-5">
         <div className="flex items-start gap-3">
           <div className="grid size-11 place-items-center rounded-2xl bg-blue-50 text-blue-700 shadow-sm">
