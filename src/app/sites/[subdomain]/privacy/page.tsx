@@ -1,4 +1,3 @@
-import { sampleClientSite } from "@/lib/sample-data";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 
 type PrivacyPageProps = {
@@ -12,8 +11,8 @@ async function getPrivacyBusiness(subdomain: string) {
 
   if (!supabase) {
     return {
-      businessName: sampleClientSite.businessName,
-      email: sampleClientSite.email
+      businessName: "This business",
+      email: "the business"
     };
   }
 

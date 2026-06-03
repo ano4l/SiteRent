@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { ImagePlus, Trash2 } from "lucide-react";
 import { useState } from "react";
 import type { DashboardClient } from "@/lib/dashboard-data";
@@ -86,8 +87,9 @@ export function PhotosManager({ client }: { client: DashboardClient }) {
         <div className="mt-6 grid gap-4 md:grid-cols-3">
           {photos.map((photo) => (
             <article key={photo} className="overflow-hidden rounded-[20px] border border-white/74 bg-white shadow-sm ring-1 ring-white/70">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={photo} alt="" className="aspect-[4/3] w-full object-cover" />
+              <div className="relative aspect-[4/3] w-full">
+                <Image src={photo} alt="" fill sizes="(max-width: 768px) 100vw, 33vw" className="object-cover" />
+              </div>
               <button type="button" onClick={() => removePhoto(photo)} className="flex w-full items-center justify-center gap-2 px-3 py-3 text-sm font-bold text-destructive transition hover:bg-destructive/10">
                 <Trash2 size={16} />
                 Remove

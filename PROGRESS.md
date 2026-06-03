@@ -8,6 +8,105 @@ This document is the running implementation ledger. It must be updated after eve
 
 ## Latest Pass
 
+2026-06-03:
+
+- Integration preflight and quality-gate pass:
+  - Added a shared runtime readiness helper for Supabase, platform routing, Gemini, Peach, Vercel domains, email, GA4 reporting, and runtime hardening.
+  - Added an integration preflight summary to the admin command center and a dedicated `/admin/integrations` matrix with critical blockers, missing environment values, evidence, and next setup steps.
+  - Added `npm run verify`, `npm run smoke`, a dependency-free `scripts/preflight-smoke.mjs`, and a GitHub Actions CI workflow for install, typecheck, lint, and build.
+  - Updated README with the pre-integration verification flow and `/admin/integrations` usage.
+  - Verification after the pass:
+    - `npm.cmd run typecheck` passed
+    - `npm.cmd run lint` passed with no warnings
+    - `npm.cmd run build` passed and the production route table lists `/admin/[section]` and middleware
+    - Production smoke on `http://127.0.0.1:3001` via `npm.cmd run smoke` passed for `/`, `/login`, protected `/dashboard` and `/admin` redirects, protected AI API fail-closed behavior, invalid public enquiries, and unsigned Peach webhooks
+
+- Client ownership authorization pass:
+  - Added authenticated client ownership checks to `/api/publish`, `/api/peach/checkout`, and `/api/onboarding/save` so signed-in users cannot publish, pay for, or update another user's client row by guessing a `clientId`.
+  - Made those routes fail closed with `401` when Supabase Auth is configured but no session is present, and `404` when the requested client is not owned by the current user.
+  - Updated Peach checkout customer fields to derive from the owned client row before building signed Hosted Checkout fields.
+  - Verification after the pass:
+    - `npm.cmd run typecheck` passed
+    - `npm.cmd run lint` passed with no warnings
+    - `npm.cmd run build` passed and the production route table lists middleware
+    - Production smoke on `http://127.0.0.1:3001` confirmed `/` and `/login` return `200`, `/builder`, `/dashboard`, and `/tutorial` redirect to `/login?next=...`, protected AI, publish, Peach checkout, and onboarding APIs return `401` without a session, and public invalid enquiries still return `400`
+
+- Auth callback resilience pass:
+  - Added missing-config, missing-code, and code-exchange error handling to `/auth/callback`.
+  - Redirected callback failures back to `/login` with the requested `next` path preserved and a visible `auth_error` message.
+  - Updated `/login` to render auth callback errors from `searchParams` immediately, not only after client hydration.
+  - Verification after the pass:
+    - `npm.cmd run typecheck` passed
+    - `npm.cmd run lint` passed with no warnings
+    - `npm.cmd run build` passed and the production route table lists middleware
+    - Production smoke on `http://127.0.0.1:3001` confirmed missing-code and invalid-code callbacks redirect to `/login?next=...&auth_error=...`, the login page renders the callback error, protected app routes still redirect to login, and `/api/ai/website-plan` returns `401` without a session
+
+- Peach result-routing production pass:
+  - Replaced the always-successful Peach shopper-result redirect with result-code classification for successful, pending, failed, and missing result states.
+  - Added raw and normalized Peach result signature checks so signed shopper results are not marked valid if the signature fails.
+  - Updated Peach return, failed, and cancel pages with honest state-specific copy, result-code display, and dashboard/billing next-step links.
+  - Verification after the pass:
+    - `npm.cmd run typecheck` passed
+    - `npm.cmd run lint` passed with no warnings
+    - `npm.cmd run build` passed and the production route table lists middleware
+    - Production smoke on `http://127.0.0.1:3001` confirmed success and pending result codes route to `/peach/return`, failed and missing result codes route to `/peach/failed`, return/failed pages render the expected copy, protected app routes still redirect to login, and unsigned Peach webhooks return `400`
+
+- Admin authorization and subsection readiness pass:
+  - Moved admin authorization into the shared `/admin` layout so every admin child route requires a signed-in user with an `admin_users` record.
+  - Replaced generic `/admin/[section]` developer-facing copy with production operations pages for payments, customers, messages, templates, invoices, analytics, automation, settings, security, and help.
+  - Added section-specific data-source notes, readiness cards, and production checklists without introducing sample records or fake metrics.
+  - Verification after the pass:
+    - `npm.cmd run typecheck` passed
+    - `npm.cmd run lint` passed with no warnings
+    - `npm.cmd run build` passed and the production route table lists middleware
+    - Production smoke on `http://127.0.0.1:3001` confirmed `/`, `/login`, `/builder`, `/admin/payment`, `/api/ai/website-plan`, `/api/enquiries`, `/api/peach/result`, `/api/peach/webhook`, and `/tutorial` have the expected public/protected behavior
+
+- Production honesty cleanup pass:
+  - Removed synthetic admin dashboard revenue multipliers, month bars, and growth claims.
+  - Replaced fake admin revenue/pipeline charts with live-data summaries and empty states.
+  - Updated dashboard system feed, domain settings, email settings, notification readiness, and lead reply routing so they reflect actual client configuration instead of defaulting to enabled/armed states.
+  - Verification after the pass:
+    - `npm.cmd run typecheck` passed
+    - `npm.cmd run lint` passed with no warnings
+    - `npm.cmd run build` passed and the production route table lists middleware
+    - Production smoke on `http://127.0.0.1:3001` confirmed `/` and `/login` return `200`, `/builder`, `/dashboard`, and `/admin` redirect to `/login?next=...`, and `/api/ai/website-plan` returns `401` without a session
+
+2026-06-02:
+
+- Auth and first-use production readiness pass:
+  - Added real Supabase Auth entry points at `/login` for registration, password sign-in, magic links, and Google OAuth.
+  - Added `/auth/callback` and `/auth/signout` for OAuth/email redirect handling and session cleanup.
+  - Moved the production auth gate into `src/middleware.ts` so the Next.js `src/app` build picks it up.
+  - Protected `/builder`, `/onboarding`, `/dashboard`, `/admin`, `/tutorial`, and production action APIs behind server-validated Supabase sessions.
+  - Added a protected `/tutorial` first-use guide and dismissible dashboard quick-start guide for first-time users.
+  - Updated website CTAs, dashboard/admin sign-out paths, README, and `.env.example` for auth-first onboarding.
+  - Verification after the pass:
+    - `npm.cmd run typecheck` passed
+    - `npm.cmd run lint` passed with no warnings
+    - `npm.cmd run build` passed and the production route table lists middleware
+    - Production smoke on `http://127.0.0.1:3001` confirmed `/` and `/login` return `200`, protected pages redirect to `/login?next=...`, and `/api/ai/website-plan` returns `401` without a session
+
+- Production-mode hardening pass:
+  - Removed demo/local success paths from production-facing API routes for enquiries, admin actions, cancellation, uploads, publish, onboarding save, Peach checkout, and Peach webhooks.
+  - Removed local/sample published-site fallbacks so missing Supabase configuration surfaces as setup-required state instead of showing sample customer data.
+  - Removed fake dashboard analytics, leads, billing history, database records, card details, review ratings, and published-site trust claims.
+  - Added file and image attachment upload support to the AI website builder, admin AI studio, and dashboard AI side chat.
+  - `GEMINI_API_KEY` is now required for AI website planning in production mode.
+
+- Tonight onboarding basics pass:
+  - Restored `/` as a public SiteRent website instead of redirecting straight to login.
+  - Added `/builder` as a user-facing AI website builder that calls the existing `/api/ai/website-plan` endpoint.
+  - Wired the builder to save a draft into browser storage and hand it into `/onboarding?fromBuilder=1`.
+  - Updated onboarding to prefill business name, owner/contact, city, service area, services, phone, email, template style, about copy, WhatsApp, and subdomain from the builder draft.
+  - Removed nonessential blockers from onboarding validation for a first publish: year founded, street address, and logo upload are now optional.
+  - Added dashboard entry points for the AI builder in the projects top bar, empty state, projects home, and overview quick actions.
+  - Updated route docs and sitemap to include `/builder`.
+  - Verification after the pass:
+    - `npm.cmd run typecheck` passed
+    - `npm.cmd run lint` passed with no warnings
+    - `npm.cmd run build` passed
+    - Browser smoke checked `/`, `/builder`, builder-to-onboarding prefill, and `/dashboard` on `http://127.0.0.1:3000`
+
 2026-05-27:
 
 - Sales-ops-dashboard exactness pass:

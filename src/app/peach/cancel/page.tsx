@@ -13,6 +13,9 @@ export default function PeachCancelPage() {
         <Link href="/onboarding" className="mt-6 inline-flex rounded-md bg-ink px-5 py-3 font-semibold text-white">
           Retry payment
         </Link>
+        <Link href="/dashboard?section=billing" className="ml-3 mt-6 inline-flex rounded-md border border-line bg-white px-5 py-3 font-semibold text-ink">
+          Billing
+        </Link>
       </section>
     </main>
   );

@@ -1,7 +1,6 @@
 import { MONTHLY_PLAN_AMOUNT } from "@/lib/billing";
 import { hasSupabaseBrowserConfig } from "@/lib/env";
 import { getSiteUrl } from "@/lib/domains";
-import { sampleClientSite } from "@/lib/sample-data";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
@@ -34,7 +33,7 @@ export type AdminEvent = {
 };
 
 export type AdminDashboardData = {
-  mode: "local" | "supabase";
+  mode: "supabase" | "configuration-required";
   authorized: boolean;
   clients: AdminClient[];
   events: AdminEvent[];
@@ -50,7 +49,7 @@ export type AdminDashboardData = {
 
 export async function isCurrentUserAdmin() {
   const supabase = createSupabaseAdminClient();
-  if (!supabase || !hasSupabaseBrowserConfig()) return true;
+  if (!supabase || !hasSupabaseBrowserConfig()) return false;
 
   const user = (await createSupabaseServerClient().auth.getUser()).data.user;
   if (!user) return false;
@@ -68,76 +67,7 @@ export async function getAdminDashboardData(): Promise<AdminDashboardData> {
   const supabase = createSupabaseAdminClient();
 
   if (!supabase) {
-    return buildDashboardData({
-      mode: "local",
-      authorized: true,
-      clients: [
-        {
-          id: sampleClientSite.id,
-          businessName: sampleClientSite.businessName,
-          ownerName: sampleClientSite.ownerName,
-          email: sampleClientSite.email,
-          subscriptionStatus: "active",
-          sitePublished: true,
-          publishedAt: new Date().toISOString(),
-          subdomain: sampleClientSite.subdomain ?? null,
-          customDomain: null,
-          siteUrl: sampleClientSite.subdomain ? `/sites/${sampleClientSite.subdomain}` : null,
-          currentStep: 6,
-          completedSteps: [1, 2, 3, 4, 5, 6],
-          nextBillingDate: null,
-          paymentFailedAt: null,
-          subscriptionEndsAt: null,
-          createdAt: new Date().toISOString()
-        },
-        {
-          id: "sample-past-due",
-          businessName: "Jozi Air Masters",
-          ownerName: "Lerato Naidoo",
-          email: "accounts@joziair.example",
-          subscriptionStatus: "past_due",
-          sitePublished: true,
-          publishedAt: new Date(Date.now() - 86400000 * 12).toISOString(),
-          subdomain: "jozi-air-masters",
-          customDomain: null,
-          siteUrl: "/sites/jozi-air-masters",
-          currentStep: 6,
-          completedSteps: [1, 2, 3, 4, 5, 6],
-          nextBillingDate: null,
-          paymentFailedAt: new Date(Date.now() - 86400000 * 2).toISOString(),
-          subscriptionEndsAt: new Date(Date.now() + 86400000 * 5).toISOString(),
-          createdAt: new Date(Date.now() - 86400000 * 35).toISOString()
-        },
-        {
-          id: "sample-draft",
-          businessName: "Durban Cool Works",
-          ownerName: "Aisha Khan",
-          email: "hello@durbancool.example",
-          subscriptionStatus: "pending",
-          sitePublished: false,
-          publishedAt: null,
-          subdomain: null,
-          customDomain: null,
-          siteUrl: null,
-          currentStep: 4,
-          completedSteps: [1, 2, 3, 4],
-          nextBillingDate: null,
-          paymentFailedAt: null,
-          subscriptionEndsAt: null,
-          createdAt: new Date(Date.now() - 86400000 * 8).toISOString()
-        }
-      ],
-      events: [
-        {
-          id: "evt-local-1",
-          clientId: sampleClientSite.id,
-          eventType: "site_published",
-          status: "published",
-          amount: null,
-          createdAt: new Date().toISOString()
-        }
-      ]
-    });
+    return buildDashboardData({ mode: "configuration-required", authorized: false, clients: [], events: [] });
   }
 
   const authorized = await isCurrentUserAdmin();
@@ -219,7 +149,7 @@ function buildDashboardData({
   clients,
   events
 }: {
-  mode: "local" | "supabase";
+  mode: "supabase" | "configuration-required";
   authorized: boolean;
   clients: AdminClient[];
   events: AdminEvent[];

@@ -7,6 +7,7 @@ import {
   isPeachSuccessfulResult,
   verifyPeachSignature
 } from "@/lib/peach";
+import { getMissingSupabaseServiceConfig, productionConfigError } from "@/lib/env";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 
 function normaliseWebhookParams(params: URLSearchParams) {
@@ -43,7 +44,18 @@ export async function POST(request: Request) {
   }
 
   const supabase = createSupabaseAdminClient();
+  if (!supabase) {
+    return NextResponse.json(
+      productionConfigError(
+        "Supabase service role is required before Peach webhooks can be processed in production.",
+        getMissingSupabaseServiceConfig()
+      ),
+      { status: 503 }
+    );
+  }
+
   const merchantTransactionId = params.merchantTransactionId;
+  const webhookEventId = params.id ?? merchantTransactionId;
   const resultCode = params["result.code"] ?? params.result_code;
   const status = isPeachSuccessfulResult(resultCode)
     ? "complete"
@@ -53,47 +65,71 @@ export async function POST(request: Request) {
         ? "failed"
         : "unknown";
 
-  if (supabase) {
-    const { data: checkoutEvent } = await supabase
+  // Idempotency: payment providers retry deliveries, so the same event can
+  // arrive multiple times. Skip processing if we have already recorded a
+  // webhook event with this provider payment id.
+  if (webhookEventId) {
+    const { data: existingWebhook } = await supabase
       .from("billing_events")
-      .select("client_id")
+      .select("id")
       .eq("provider", "peach")
-      .eq("provider_payment_id", merchantTransactionId)
+      .eq("event_type", "webhook")
+      .eq("provider_payment_id", webhookEventId)
       .maybeSingle();
 
-    const clientId = checkoutEvent?.client_id ?? params["customer.merchantCustomerId"] ?? null;
-
-    await supabase.from("billing_events").insert({
-      client_id: clientId,
-      provider: "peach",
-      event_type: "webhook",
-      provider_payment_id: params.id ?? merchantTransactionId,
-      amount: params.amount ? Number(params.amount) : null,
-      status,
-      payload: params
-    });
-
-    if (clientId && status === "complete") {
-      await supabase
-        .from("clients")
-        .update({
-          subscription_status: "active",
-          peach_registration_id: params.registrationId || undefined,
-          payment_failed_at: null
-        })
-        .eq("id", clientId);
+    if (existingWebhook) {
+      return NextResponse.json({ ok: true, deduplicated: true });
     }
+  }
 
-    if (clientId && status === "failed") {
-      await supabase
-        .from("clients")
-        .update({
-          subscription_status: "past_due",
-          payment_failed_at: new Date().toISOString(),
-          subscription_ends_at: getGracePeriodEnd().toISOString()
-        })
-        .eq("id", clientId);
+  const { data: checkoutEvent } = await supabase
+    .from("billing_events")
+    .select("client_id")
+    .eq("provider", "peach")
+    .eq("provider_payment_id", merchantTransactionId)
+    .maybeSingle();
+
+  const clientId = checkoutEvent?.client_id ?? params["customer.merchantCustomerId"] ?? null;
+
+  const { error: insertError } = await supabase.from("billing_events").insert({
+    client_id: clientId,
+    provider: "peach",
+    event_type: "webhook",
+    provider_payment_id: webhookEventId,
+    amount: params.amount ? Number(params.amount) : null,
+    status,
+    payload: params
+  });
+
+  // Unique-constraint violation = a concurrent delivery already inserted this
+  // event. Treat as a successful no-op rather than re-applying side effects.
+  if (insertError) {
+    if (insertError.code === "23505") {
+      return NextResponse.json({ ok: true, deduplicated: true });
     }
+    return NextResponse.json({ error: insertError.message }, { status: 500 });
+  }
+
+  if (clientId && status === "complete") {
+    await supabase
+      .from("clients")
+      .update({
+        subscription_status: "active",
+        peach_registration_id: params.registrationId || undefined,
+        payment_failed_at: null
+      })
+      .eq("id", clientId);
+  }
+
+  if (clientId && status === "failed") {
+    await supabase
+      .from("clients")
+      .update({
+        subscription_status: "past_due",
+        payment_failed_at: new Date().toISOString(),
+        subscription_ends_at: getGracePeriodEnd().toISOString()
+      })
+      .eq("id", clientId);
   }
 
   return NextResponse.json({ ok: true });

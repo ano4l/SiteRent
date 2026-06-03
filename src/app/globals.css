@@ -25,6 +25,32 @@
   --sidebar-border: #e5e5e5;
   --success: #0070f3;
   --warning: #b45309;
+
+  /* App (slate/blue) theme — login, onboarding, dashboard shell */
+  --app-bg: #f2f4f8;
+  --app-bg-soft: #eef2f6;
+  --app-surface: #f4f6f8;
+  --app-surface-strong: #f8fafc;
+  --app-line: #d9dee5;
+  --app-line-soft: #edf0f4;
+  --app-line-strong: #111827;
+  --app-divider: #e5e7eb;
+  --app-border-hover: #b8c0cc;
+
+  /* Admin (paper/ink) theme — formally separate from the app theme */
+  --admin-ink: #111111;
+  --admin-muted: #6b6258;
+  --admin-paper: #f3eee6;
+  --admin-surface: #fbf8f3;
+  --admin-line: #e1d8ca;
+  --admin-line-soft: #e8dfd2;
+  --admin-accent: #c97c16;
+
+  /* SiteRent brand mark (green) */
+  --brand-mint: #dff8ed;
+  --brand-green-300: #48e0a0;
+  --brand-green-500: #1ecb7b;
+  --brand-green-700: #0bb665;
 }
 
 * {
@@ -40,8 +66,8 @@ body {
   background: var(--background);
   color: var(--foreground);
   font-family:
-    "DM Sans", Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
-    sans-serif;
+    var(--font-dm-sans), Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont,
+    "Segoe UI", sans-serif;
 }
 
 ::selection {

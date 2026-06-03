@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import { hasSupabaseBrowserConfig } from "@/lib/env";
+import { getMissingSupabaseServiceConfig, hasSupabaseBrowserConfig, productionConfigError } from "@/lib/env";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
@@ -63,18 +63,32 @@ export async function POST(request: Request) {
   const supabase = createSupabaseAdminClient();
 
   if (!supabase) {
-    return NextResponse.json({
-      ok: true,
-      mode: "local",
-      clientId: payload.data.clientId ?? "local-client",
-      savedAt: new Date().toISOString(),
-      currentStep: payload.data.currentStep
-    });
+    return NextResponse.json(
+      productionConfigError("Supabase is required before onboarding can save in production.", getMissingSupabaseServiceConfig()),
+      { status: 503 }
+    );
   }
 
   const authUser = hasSupabaseBrowserConfig()
     ? (await createSupabaseServerClient().auth.getUser()).data.user
     : null;
+
+  if (hasSupabaseBrowserConfig() && !authUser) {
+    return NextResponse.json({ error: "Authentication required" }, { status: 401 });
+  }
+
+  if (payload.data.clientId && authUser) {
+    const { data: ownedClient } = await supabase
+      .from("clients")
+      .select("id")
+      .eq("id", payload.data.clientId)
+      .eq("user_id", authUser.id)
+      .maybeSingle();
+
+    if (!ownedClient) {
+      return NextResponse.json({ error: "Client not found" }, { status: 404 });
+    }
+  }
 
   const data = payload.data.data;
   const clientValues = {
@@ -118,7 +132,13 @@ export async function POST(request: Request) {
   };
 
   const clientQuery = payload.data.clientId
-    ? supabase.from("clients").update(clientValues).eq("id", payload.data.clientId).select("id").single()
+    ? supabase
+        .from("clients")
+        .update(clientValues)
+        .eq("id", payload.data.clientId)
+        .eq("user_id", authUser?.id ?? null)
+        .select("id")
+        .single()
     : supabase.from("clients").insert(clientValues).select("id").single();
 
   const { data: client, error: clientError } = await clientQuery;

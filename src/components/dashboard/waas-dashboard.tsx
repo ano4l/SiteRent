@@ -57,9 +57,8 @@ import { PublishResultNotice } from "@/components/dashboard/publish-result-notic
 import { RepublishButton } from "@/components/dashboard/republish-button";
 import { TrackingSettingsForm } from "@/components/dashboard/tracking-settings-form";
 import { HvacSite } from "@/components/published/hvac-site";
-import { TEMPLATE_STYLES } from "@/lib/constants";
+import { TEMPLATE_STYLES, WEEK_DAYS } from "@/lib/constants";
 import type { DashboardData } from "@/lib/dashboard-data";
-import { sampleClientSite } from "@/lib/sample-data";
 import type { ClientSite } from "@/lib/types";
 import { cn, formatCurrencyZar } from "@/lib/utils";
 
@@ -122,6 +121,7 @@ export function WaasDashboard({ data, siteUrl, initialSection = "overview" }: { 
         <ProjectsTopBar />
         <section className="mx-auto max-w-7xl px-6 py-10 lg:px-8 lg:py-14">
           <PublishResultNotice />
+          <FirstUseGuide />
           {!data.hasWebsite ? (
             <EmptyWebsiteState />
           ) : (
@@ -164,6 +164,9 @@ export function WaasDashboard({ data, siteUrl, initialSection = "overview" }: { 
                 <Bell className="size-5" />
                 <span className="absolute right-1.5 top-1.5 size-2 animate-pulse rounded-full bg-accent" />
               </button>
+              <Link href="/auth/signout" aria-label="Sign out" className="hidden size-10 items-center justify-center rounded-full border border-white/70 bg-white/70 text-muted-foreground shadow-sm backdrop-blur-xl transition hover:bg-white hover:text-foreground sm:flex">
+                <LogOut className="size-4" />
+              </Link>
               <Link href="/dashboard?section=settings" className="flex size-10 items-center justify-center rounded-full border border-white/70 bg-white/70 text-xs font-semibold text-foreground shadow-sm backdrop-blur-xl transition hover:bg-white">SR</Link>
             </div>
           </header>
@@ -171,6 +174,7 @@ export function WaasDashboard({ data, siteUrl, initialSection = "overview" }: { 
 
         <section className={cn("flex-1", activeSection === "view" || activeSection === "settings" ? "overflow-hidden px-0 py-0" : "overflow-auto px-7 py-7")}>
           <PublishResultNotice />
+          {activeSection !== "view" && activeSection !== "settings" && <FirstUseGuide />}
           <ProjectWorkspace data={data} siteUrl={siteUrl} activeSection={activeSection} setActiveSection={setActiveSection} onBack={() => {
             setSelectedProject(null);
             setActiveSection("overview");
@@ -199,8 +203,15 @@ function ProjectsTopBar() {
             <Plus className="size-4" />
             Create website
           </Link>
+          <Link href="/builder" className="hidden items-center gap-2 rounded-lg border border-[#e3e7ec] bg-[#111827] px-4 py-2.5 text-xs font-bold uppercase tracking-[0.08em] text-white shadow-sm transition hover:-translate-y-0.5 hover:bg-black md:inline-flex">
+            <Wand2 className="size-4" />
+            AI builder
+          </Link>
           <Link href="/dashboard?section=settings" className="hidden rounded-lg border border-[#e3e7ec] bg-[#f8fafc] px-4 py-2.5 text-sm font-semibold text-foreground shadow-sm transition hover:bg-white sm:inline-flex">
             Account
+          </Link>
+          <Link href="/auth/signout" aria-label="Sign out" className="hidden size-10 place-items-center rounded-lg border border-[#e3e7ec] bg-white text-muted-foreground shadow-sm transition hover:bg-[#f8fafc] hover:text-foreground md:grid">
+            <LogOut className="size-4" />
           </Link>
           <Link href="/dashboard?section=settings" aria-label="Account settings" className="grid size-10 place-items-center rounded-full bg-[linear-gradient(135deg,#f7d7c4,#f5efe7)] text-xs font-bold text-[#604235] shadow-sm ring-1 ring-[#eadfd6]">
             SR
@@ -219,6 +230,64 @@ function SiteRentMark() {
       <span className="rounded-[4px] bg-[#48e0a0]" />
       <span className="rounded-[4px] bg-[#0bb665]" />
     </span>
+  );
+}
+
+const firstUseGuideStorageKey = "siterent-first-use-guide-dismissed-v1";
+
+function FirstUseGuide() {
+  const [visible, setVisible] = useState(false);
+
+  useEffect(() => {
+    setVisible(window.localStorage.getItem(firstUseGuideStorageKey) !== "1");
+  }, []);
+
+  function dismiss() {
+    window.localStorage.setItem(firstUseGuideStorageKey, "1");
+    setVisible(false);
+  }
+
+  if (!visible) return null;
+
+  const steps = [
+    { title: "Create an AI draft", copy: "Start with the business name, services, city, and proof. Upload notes or photos if they help.", href: "/builder", icon: Wand2 },
+    { title: "Complete onboarding", copy: "Confirm services, style, contact routes, payment, and the production subdomain.", href: "/onboarding", icon: MonitorCheck },
+    { title: "Publish and review", copy: "Use the dashboard preview, connect tracking, and publish only when the basics are complete.", href: "/dashboard?section=view", icon: Rocket },
+    { title: "Keep it updated", copy: "Add project photos, respond to enquiries, and use the AI assistant for copy improvements.", href: "/dashboard?section=photos", icon: UploadCloud }
+  ];
+
+  return (
+    <section className="mb-6 overflow-hidden rounded-[24px] border border-white/74 bg-white/72 p-5 shadow-[0_22px_60px_rgba(15,23,42,0.08)] ring-1 ring-white/70 backdrop-blur-2xl">
+      <div className="flex flex-wrap items-start justify-between gap-4">
+        <div>
+          <div className="inline-flex items-center gap-2 rounded-full bg-blue-50 px-3 py-1 text-xs font-bold uppercase tracking-[0.12em] text-blue-700">
+            <Sparkles className="size-3.5" />
+            First-time guide
+          </div>
+          <h2 className="mt-3 text-2xl font-bold tracking-tight text-foreground">Use SiteRent in the right order.</h2>
+          <p className="mt-2 max-w-2xl text-sm leading-6 text-muted-foreground">
+            These are the production steps for a first client: authenticate, draft, onboard, publish, then maintain.
+          </p>
+        </div>
+        <button type="button" onClick={dismiss} className="rounded-xl border border-border bg-white px-4 py-2 text-sm font-semibold text-muted-foreground transition hover:text-foreground">
+          Dismiss
+        </button>
+      </div>
+      <div className="mt-5 grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+        {steps.map((step) => {
+          const Icon = step.icon;
+          return (
+            <Link key={step.title} href={step.href} className="group rounded-2xl border border-white/70 bg-white/70 p-4 shadow-sm transition hover:-translate-y-0.5 hover:bg-white">
+              <span className="grid size-10 place-items-center rounded-xl bg-secondary text-muted-foreground transition group-hover:bg-foreground group-hover:text-white">
+                <Icon className="size-4" />
+              </span>
+              <h3 className="mt-4 text-sm font-bold text-foreground">{step.title}</h3>
+              <p className="mt-2 text-xs leading-5 text-muted-foreground">{step.copy}</p>
+            </Link>
+          );
+        })}
+      </div>
+    </section>
   );
 }
 
@@ -347,8 +416,8 @@ function sectionTitle(section: Section) {
 }
 
 function ProjectsHome({ data, siteUrl, onOpenProject }: { data: DashboardData; siteUrl: string | null; onOpenProject: (id: string) => void }) {
-  const title = data.client.business_name ?? data.client.trading_name ?? "Cape Climate Pros";
-  const url = siteUrl ? new URL(siteUrl).hostname : `${data.client.subdomain ?? "cape-climate-pros"}.siterent.co.za`;
+  const title = data.client.business_name ?? data.client.trading_name ?? "Website workspace";
+  const url = siteUrl ? new URL(siteUrl).hostname : data.client.subdomain ? `${data.client.subdomain}.siterent.co.za` : "Not published";
   const template = data.client.template_style && data.client.template_style in TEMPLATE_STYLES
     ? TEMPLATE_STYLES[data.client.template_style as keyof typeof TEMPLATE_STYLES]
     : TEMPLATE_STYLES["coolair-blue"];
@@ -362,8 +431,8 @@ function ProjectsHome({ data, siteUrl, onOpenProject }: { data: DashboardData; s
       client: data.client.trading_name ?? data.client.business_name ?? title,
       line: template.label,
       tag: status,
-      users: data.mode === "supabase" ? "01" : "Demo",
-      services: galleryCount > 0 ? String(galleryCount).padStart(2, "0") : "03",
+      users: "01",
+      services: galleryCount > 0 ? String(galleryCount).padStart(2, "0") : "00",
       assets: data.client.ga_measurement_id || data.client.pixel_id ? "On" : "Setup"
     }
   ];
@@ -385,7 +454,7 @@ function ProjectsHome({ data, siteUrl, onOpenProject }: { data: DashboardData; s
               <p className="mt-3 max-w-2xl text-sm leading-6 text-muted-foreground">Manage website previews, content, design, media, tracking, billing, and launch readiness from one clean workspace.</p>
               <div className="mt-6 flex flex-wrap gap-2">
                 <StatusPill tone={data.client.site_published ? "good" : "warn"} icon={RadioTower} label={data.client.site_published ? "Live website" : "Draft website"} />
-                <StatusPill tone={data.mode === "supabase" ? "good" : "neutral"} icon={Server} label={data.mode === "supabase" ? "Supabase connected" : "Local demo data"} />
+                <StatusPill tone={data.mode === "supabase" ? "good" : "warn"} icon={Server} label={data.mode === "supabase" ? "Supabase connected" : "Production setup required"} />
               </div>
             </div>
             <div className="rounded-2xl border border-white/70 bg-white/72 p-5 shadow-sm">
@@ -397,6 +466,10 @@ function ProjectsHome({ data, siteUrl, onOpenProject }: { data: DashboardData; s
               <Link href="/onboarding" className="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-accent px-5 py-3 text-sm font-bold text-accent-foreground shadow-[0_18px_34px_rgba(17,17,17,0.14)]">
                 <Plus className="size-4" />
                 Create website
+              </Link>
+              <Link href="/builder" className="mt-3 inline-flex w-full items-center justify-center gap-2 rounded-xl border border-border bg-white px-5 py-3 text-sm font-bold text-foreground shadow-sm transition hover:bg-secondary">
+                <Wand2 className="size-4" />
+                Start with AI builder
               </Link>
             </div>
           </div>
@@ -425,10 +498,16 @@ function ProjectsHome({ data, siteUrl, onOpenProject }: { data: DashboardData; s
         <section className="rounded-[24px] border border-white/74 bg-white/66 p-6 shadow-[0_22px_60px_rgba(15,23,42,0.08)] ring-1 ring-white/70 backdrop-blur-2xl">
           <div className="flex flex-wrap items-center justify-between gap-4">
             <h2 className="text-2xl font-semibold tracking-tight text-foreground">My Websites</h2>
-            <Link href="/onboarding" className="inline-flex items-center gap-2 rounded-xl bg-white px-4 py-2.5 text-xs font-bold uppercase tracking-[0.08em] text-foreground shadow-sm ring-1 ring-border transition hover:bg-secondary">
-              <Plus className="size-4" />
-              Create new
-            </Link>
+            <div className="flex flex-wrap gap-2">
+              <Link href="/builder" className="inline-flex items-center gap-2 rounded-xl bg-foreground px-4 py-2.5 text-xs font-bold uppercase tracking-[0.08em] text-white shadow-sm transition hover:bg-black">
+                <Wand2 className="size-4" />
+                AI builder
+              </Link>
+              <Link href="/onboarding" className="inline-flex items-center gap-2 rounded-xl bg-white px-4 py-2.5 text-xs font-bold uppercase tracking-[0.08em] text-foreground shadow-sm ring-1 ring-border transition hover:bg-secondary">
+                <Plus className="size-4" />
+                Create new
+              </Link>
+            </div>
           </div>
 
           <div className="mt-5 flex flex-wrap items-center gap-6 border-b border-border text-sm text-muted-foreground">
@@ -475,9 +554,9 @@ function ProjectsHome({ data, siteUrl, onOpenProject }: { data: DashboardData; s
                     </td>
                     <td className="px-4 py-4">
                       <div className="flex -space-x-2">
-                        {["#0f172a", "#e0f2fe", "#fecdd3"].map((color, index) => (
+                        {["#0f172a"].map((color) => (
                           <span key={color} className="grid size-8 place-items-center rounded-full border-2 border-white text-[10px] font-bold text-white" style={{ backgroundColor: color }}>
-                            {index === 2 ? ownerInitial : ""}
+                            {ownerInitial}
                           </span>
                         ))}
                       </div>
@@ -593,8 +672,9 @@ function EmptyWebsiteState() {
           <Plus className="size-6" />
         </div>
         <h2 className="mt-5 text-3xl font-bold tracking-tight text-foreground">Create your first website</h2>
-        <p className="mt-3 text-sm leading-6 text-muted-foreground">Your workspace is ready. Start onboarding, choose a template style, add business details, then return here for live metrics and website controls.</p>
+        <p className="mt-3 text-sm leading-6 text-muted-foreground">Your workspace is ready. Start with the AI builder for a draft, or go straight into onboarding to choose a template style, add business details, and publish.</p>
         <div className="mt-6 flex flex-wrap justify-center gap-3">
+          <Link href="/builder" className="inline-flex items-center gap-2 rounded-lg bg-accent px-5 py-3 text-sm font-bold text-accent-foreground"><Wand2 className="size-4" /> Build with AI</Link>
           <Link href="/onboarding" className="inline-flex items-center gap-2 rounded-lg bg-accent px-5 py-3 text-sm font-bold text-accent-foreground"><Plus className="size-4" /> Create website</Link>
           <Link href="/login" className="inline-flex items-center gap-2 rounded-lg border border-border bg-secondary px-5 py-3 text-sm font-bold text-foreground">Back to auth</Link>
         </div>
@@ -607,17 +687,17 @@ function OverviewPanel({ data, siteUrl, onEdit }: { data: DashboardData; siteUrl
   const photos = data.client.gallery_photos.length;
   const trackingReady = Boolean(data.client.ga_measurement_id || data.client.pixel_id);
   const profileReady = Boolean(data.client.business_name || data.client.trading_name);
-  const analytics = getCustomerAnalytics(trackingReady);
+  const analytics = getCustomerAnalytics();
 
   return (
     <div className="space-y-6">
       <ControlCenterHeader data={data} siteUrl={siteUrl} />
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        <MetricCard title="Page visits" value={analytics.visits} change={trackingReady ? "+12% vs last week" : "Demo estimate"} changeType={trackingReady ? "positive" : "neutral"} icon={BarChart3} />
-        <MetricCard title="New enquiries" value={analytics.enquiries} change={trackingReady ? "+4 this week" : "Track forms"} changeType={trackingReady ? "positive" : "neutral"} icon={Users} />
-        <MetricCard title="Conversion rate" value={analytics.conversionRate} change={trackingReady ? "Visits to leads" : "Needs tracking"} changeType={trackingReady ? "positive" : "neutral"} icon={TrendingUp} />
-        <MetricCard title="Top source" value={analytics.topSource} change={trackingReady ? "Best channel" : "Pending data"} changeType="neutral" icon={Globe2} />
+        <MetricCard title="Page visits" value={analytics.visits} change={trackingReady ? "Awaiting data" : "Connect tracking"} changeType="neutral" icon={BarChart3} />
+        <MetricCard title="New enquiries" value={analytics.enquiries} change="Capture ready" changeType="neutral" icon={Users} />
+        <MetricCard title="Conversion rate" value={analytics.conversionRate} change={trackingReady ? "Awaiting data" : "Needs tracking"} changeType="neutral" icon={TrendingUp} />
+        <MetricCard title="Top source" value={analytics.topSource} change="Pending data" changeType="neutral" icon={Globe2} />
       </div>
 
       <div className="grid grid-cols-1 gap-6 xl:grid-cols-[minmax(0,1.5fr)_minmax(340px,0.75fr)]">
@@ -634,6 +714,7 @@ function OverviewPanel({ data, siteUrl, onEdit }: { data: DashboardData; siteUrl
           <PanelTitle title="Quick Actions" subtitle="Simple next steps for this website" />
           <div className="mt-5 space-y-3">
             <ActionRow icon={FilePenLine} title="Edit website" copy="Update copy, contact data, and location details." value="Core" onClick={onEdit} />
+            <ActionLink icon={Wand2} title="AI builder" copy="Generate a fresh plan and send it into onboarding." value="Draft" href="/builder" />
             <ActionLink icon={Palette} title="Improve template" copy="Tune the layout and style for more enquiries." value="Template" href="/onboarding?step=2" />
             <ActionRow icon={Globe2} title="View website preview" copy="Open a full-bleed website preview inside the dashboard." value="Preview" onClick={() => {
               window.dispatchEvent(new CustomEvent("siterent:view-site"));
@@ -657,52 +738,31 @@ type CustomerAnalytics = {
   sources: { source: string; share: number; visits: string }[];
 };
 
-function getCustomerAnalytics(trackingReady: boolean): CustomerAnalytics {
-  if (!trackingReady) {
-    return {
-      visits: "1,248",
-      enquiries: "36",
-      conversionRate: "2.9%",
-      topSource: "Google",
-      trend: [72, 84, 79, 96, 88, 110, 126, 118, 132, 149, 142, 164, 171, 188],
-      enquiriesTrend: [2, 3, 2, 4, 3, 5, 6, 5, 6, 7, 6, 8, 8, 9],
-      topPages: [
-        { page: "Homepage", visits: "684", enquiries: "18", rate: "2.6%" },
-        { page: "Services", visits: "312", enquiries: "11", rate: "3.5%" },
-        { page: "Contact", visits: "164", enquiries: "7", rate: "4.3%" }
-      ],
-      sources: [
-        { source: "Google Search", share: 52, visits: "649" },
-        { source: "Direct", share: 28, visits: "349" },
-        { source: "Facebook", share: 12, visits: "150" },
-        { source: "Other", share: 8, visits: "100" }
-      ]
-    };
-  }
-
+function getCustomerAnalytics(): CustomerAnalytics {
   return {
-    visits: "1,248",
-    enquiries: "36",
-    conversionRate: "2.9%",
-    topSource: "Google",
-    trend: [72, 84, 79, 96, 88, 110, 126, 118, 132, 149, 142, 164, 171, 188],
-    enquiriesTrend: [2, 3, 2, 4, 3, 5, 6, 5, 6, 7, 6, 8, 8, 9],
+    visits: "0",
+    enquiries: "0",
+    conversionRate: "0%",
+    topSource: "Pending",
+    trend: Array.from({ length: 14 }, () => 0),
+    enquiriesTrend: Array.from({ length: 14 }, () => 0),
     topPages: [
-      { page: "Homepage", visits: "684", enquiries: "18", rate: "2.6%" },
-      { page: "Services", visits: "312", enquiries: "11", rate: "3.5%" },
-      { page: "Contact", visits: "164", enquiries: "7", rate: "4.3%" }
+      { page: "Homepage", visits: "0", enquiries: "0", rate: "0%" },
+      { page: "Services", visits: "0", enquiries: "0", rate: "0%" },
+      { page: "Contact", visits: "0", enquiries: "0", rate: "0%" }
     ],
     sources: [
-      { source: "Google Search", share: 52, visits: "649" },
-      { source: "Direct", share: 28, visits: "349" },
-      { source: "Facebook", share: 12, visits: "150" },
-      { source: "Other", share: 8, visits: "100" }
+      { source: "Google Search", share: 0, visits: "0" },
+      { source: "Direct", share: 0, visits: "0" },
+      { source: "Facebook", share: 0, visits: "0" },
+      { source: "Other", share: 0, visits: "0" }
     ]
   };
 }
 
 function VisitsPanel({ analytics }: { analytics: CustomerAnalytics }) {
-  const max = Math.max(...analytics.trend);
+  const max = Math.max(...analytics.trend, 1);
+  const hasData = analytics.trend.some((value) => value > 0);
 
   return (
     <section className="min-h-[430px] rounded-[24px] border border-white/74 bg-white/62 p-5 shadow-[0_22px_60px_rgba(15,23,42,0.08)] ring-1 ring-white/70 backdrop-blur-2xl">
@@ -716,14 +776,14 @@ function VisitsPanel({ analytics }: { analytics: CustomerAnalytics }) {
       <div className="mt-8 flex h-64 items-end gap-2 border-b border-l border-white/70 px-2 pb-2">
         {analytics.trend.map((value, index) => (
           <div key={`${value}-${index}`} className="flex h-full flex-1 items-end">
-            <div className="w-full rounded-t-full bg-[linear-gradient(180deg,#111,#64748b)] shadow-[0_10px_20px_rgba(15,23,42,0.12)]" style={{ height: `${Math.max((value / max) * 100, 8)}%` }} />
+            <div className="w-full rounded-t-full bg-[linear-gradient(180deg,#111,#64748b)] shadow-[0_10px_20px_rgba(15,23,42,0.12)]" style={{ height: hasData ? `${Math.max((value / max) * 100, 8)}%` : "4%" }} />
           </div>
         ))}
       </div>
       <div className="mt-5 grid gap-3 md:grid-cols-3">
-        <MiniInsight label="Best day" value="Friday" />
-        <MiniInsight label="Average per day" value="89 visits" />
-        <MiniInsight label="Trend" value="+12%" />
+        <MiniInsight label="Best day" value={hasData ? "Calculated" : "Pending"} />
+        <MiniInsight label="Average per day" value={hasData ? "Calculated" : "0 visits"} />
+        <MiniInsight label="Trend" value={hasData ? "Calculated" : "Awaiting data"} />
       </div>
     </section>
   );
@@ -741,7 +801,9 @@ function LeadQualityPanel({ analytics }: { analytics: CustomerAnalytics }) {
       <div className="mt-6 rounded-2xl border border-white/70 bg-white/62 p-4 shadow-sm backdrop-blur-xl">
         <p className="text-sm font-semibold text-foreground">Plain-English readout</p>
         <p className="mt-2 text-sm leading-6 text-muted-foreground">
-          Google is bringing the most traffic. The services page converts best, so keep pricing, response time, and trust proof clear there.
+          {analytics.topSource === "Pending"
+            ? "Connect analytics and publish the site to start collecting traffic, source, and enquiry data."
+            : `${analytics.topSource} is currently the strongest source. Keep pricing, response time, and trust proof clear on the highest-converting pages.`}
         </p>
       </div>
     </section>
@@ -955,23 +1017,19 @@ function DomainPanel({ data, siteUrl }: { data: DashboardData; siteUrl: string |
 }
 
 function DatabasePanel({ data }: { data: DashboardData }) {
-  const records = [
-    { type: "Form submission", name: "Emergency repair enquiry", source: "Contact form", date: "Today", status: "New" },
-    { type: "Uploaded document", name: "Maintenance quote.pdf", source: "Upload field", date: "Yesterday", status: "Stored" },
-    { type: "Lead profile", name: data.client.email ?? "customer@example.com", source: "Website CTA", date: "2 days ago", status: "Synced" }
-  ];
+  const records: Array<{ type: string; name: string; source: string; date: string; status: string }> = [];
 
   return (
     <section className="rounded-[24px] border border-white/74 bg-white/72 p-6 shadow-[0_22px_60px_rgba(15,23,42,0.08)] ring-1 ring-white/70 backdrop-blur-2xl">
       <div className="flex flex-wrap items-start justify-between gap-4">
         <PanelTitle title="Website database" subtitle="Stored records captured through forms, uploads, and website events." />
-        <StatusPill tone={data.mode === "supabase" ? "good" : "neutral"} icon={Database} label={data.mode === "supabase" ? "Supabase connected" : "Demo records"} />
+        <StatusPill tone={data.mode === "supabase" ? "good" : "warn"} icon={Database} label={data.mode === "supabase" ? "Supabase connected" : "Production setup required"} />
       </div>
       <div className="mt-6 grid gap-4 md:grid-cols-4">
-        <MetricCard title="Form entries" value="12" change="Last 30 days" changeType="neutral" icon={FileText} />
-        <MetricCard title="Documents" value="04" change="Uploaded" changeType="neutral" icon={UploadCloud} />
-        <MetricCard title="Contacts" value="09" change="Captured" changeType="positive" icon={Users} />
-        <MetricCard title="Storage" value="18%" change="Used" changeType="neutral" icon={HardDrive} />
+        <MetricCard title="Form entries" value="0" change="Awaiting submissions" changeType="neutral" icon={FileText} />
+        <MetricCard title="Documents" value="0" change="Awaiting uploads" changeType="neutral" icon={UploadCloud} />
+        <MetricCard title="Contacts" value="0" change="Awaiting capture" changeType="neutral" icon={Users} />
+        <MetricCard title="Storage" value="0%" change="Used" changeType="neutral" icon={HardDrive} />
       </div>
       <div className="mt-6 overflow-hidden rounded-2xl border border-border bg-white">
         <table className="w-full text-left text-sm">
@@ -979,14 +1037,18 @@ function DatabasePanel({ data }: { data: DashboardData }) {
             <tr><th className="px-4 py-3">Record</th><th className="px-4 py-3">Source</th><th className="px-4 py-3">Date</th><th className="px-4 py-3">Status</th></tr>
           </thead>
           <tbody>
-            {records.map((record) => (
+            {records.length ? records.map((record) => (
               <tr key={record.name} className="border-t border-border">
                 <td className="px-4 py-3"><span className="block font-semibold text-foreground">{record.name}</span><span className="text-xs text-muted-foreground">{record.type}</span></td>
                 <td className="px-4 py-3 text-muted-foreground">{record.source}</td>
                 <td className="px-4 py-3 text-muted-foreground">{record.date}</td>
                 <td className="px-4 py-3"><span className="rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-bold text-emerald-700">{record.status}</span></td>
               </tr>
-            ))}
+            )) : (
+              <tr className="border-t border-border">
+                <td className="px-4 py-8 text-center text-sm font-semibold text-muted-foreground" colSpan={4}>No website records captured yet.</td>
+              </tr>
+            )}
           </tbody>
         </table>
       </div>
@@ -1018,6 +1080,8 @@ function ControlCenterHeader({ data, siteUrl }: { data: DashboardData; siteUrl: 
     ? TEMPLATE_STYLES[data.client.template_style as keyof typeof TEMPLATE_STYLES]
     : null;
   const publishedAt = data.client.published_at ? new Date(data.client.published_at).toLocaleString("en-ZA") : "Not published";
+  const leadFormReady = Boolean(data.client.phone || data.client.email || data.client.whatsapp);
+  const trackingReady = Boolean(data.client.ga_measurement_id || data.client.pixel_id);
 
   return (
     <section className="overflow-hidden rounded-[24px] border border-white/74 bg-white/62 shadow-[0_22px_60px_rgba(15,23,42,0.08)] ring-1 ring-white/70 backdrop-blur-2xl">
@@ -1025,7 +1089,7 @@ function ControlCenterHeader({ data, siteUrl }: { data: DashboardData; siteUrl: 
         <div className="p-7 md:p-8">
           <div className="flex flex-wrap items-center gap-2">
             <StatusPill tone={data.client.site_published ? "good" : "warn"} icon={RadioTower} label={data.client.site_published ? "Live service" : "Draft mode"} />
-            <StatusPill tone={data.mode === "supabase" ? "good" : "neutral"} icon={Server} label={data.mode === "supabase" ? "Supabase connected" : "Local demo data"} />
+            <StatusPill tone={data.mode === "supabase" ? "good" : "warn"} icon={Server} label={data.mode === "supabase" ? "Supabase connected" : "Production setup required"} />
             <StatusPill tone={data.client.subscription_status === "active" ? "good" : "warn"} icon={ShieldCheck} label={data.client.subscription_status.replace(/_/g, " ")} />
           </div>
           <h2 className="mt-5 text-3xl font-bold tracking-tight text-foreground md:text-4xl">
@@ -1046,10 +1110,10 @@ function ControlCenterHeader({ data, siteUrl }: { data: DashboardData; siteUrl: 
               <span className="text-xs font-bold uppercase tracking-[0.18em] text-muted-foreground">System feed</span>
               <Activity className="size-4 text-accent" />
             </div>
-            <TelemetryLine label="Publishing queue" value="Clear" good />
-            <TelemetryLine label="Lead form" value="Armed" good />
+            <TelemetryLine label="Publishing" value={data.client.site_published ? "Published" : "Draft"} good={data.client.site_published} />
+            <TelemetryLine label="Lead form" value={leadFormReady ? "Contact ready" : "Missing contact"} good={leadFormReady} />
             <TelemetryLine label="Template deploy" value={template?.label ?? "Pending"} good={Boolean(template)} />
-            <TelemetryLine label="Analytics" value={data.client.ga_measurement_id || data.client.pixel_id ? "Receiving" : "Waiting"} good={Boolean(data.client.ga_measurement_id || data.client.pixel_id)} />
+            <TelemetryLine label="Analytics" value={trackingReady ? "Configured" : "Waiting"} good={trackingReady} />
           </div>
         </div>
       </div>
@@ -1059,9 +1123,9 @@ function ControlCenterHeader({ data, siteUrl }: { data: DashboardData; siteUrl: 
 
 function ViewSitePanel({ data, siteUrl }: { data: DashboardData; siteUrl: string | null }) {
   const [device, setDevice] = useState<"desktop" | "tablet" | "mobile">("desktop");
-  const title = data.client.business_name ?? data.client.trading_name ?? "Cape Climate Pros";
-  const url = siteUrl ? new URL(siteUrl).hostname : `${data.client.subdomain ?? "cape-climate-pros"}.siterent.co.za`;
-  const previewPath = `/sites/${data.client.subdomain ?? "cape-climate-pros"}`;
+  const title = data.client.business_name ?? data.client.trading_name ?? "Unpublished website";
+  const url = siteUrl ? new URL(siteUrl).hostname : data.client.subdomain ? `${data.client.subdomain}.siterent.co.za` : "Not published";
+  const previewPath = data.client.subdomain ? `/sites/${data.client.subdomain}` : "/dashboard?section=domain";
   const previewSite = dashboardClientToPreviewSite(data);
   const deviceConfig = {
     desktop: { label: "Desktop", icon: MonitorCheck, width: 1180, chrome: "Full responsive canvas", height: "h-[calc(100vh-15rem)]" },
@@ -1148,24 +1212,40 @@ function dashboardClientToPreviewSite(data: DashboardData): ClientSite {
   const templateStyle =
     data.client.template_style && data.client.template_style in TEMPLATE_STYLES
       ? (data.client.template_style as ClientSite["templateStyle"])
-      : sampleClientSite.templateStyle;
+      : "aireco-dark";
 
   return {
-    ...sampleClientSite,
     id: data.client.id,
-    businessName: data.client.business_name ?? data.client.trading_name ?? sampleClientSite.businessName,
-    tradingName: data.client.trading_name ?? data.client.business_name ?? sampleClientSite.tradingName,
-    tagline: data.client.tagline ?? sampleClientSite.tagline,
-    phone: data.client.phone ?? sampleClientSite.phone,
-    whatsapp: data.client.whatsapp ?? data.client.phone ?? sampleClientSite.whatsapp,
-    email: data.client.email ?? sampleClientSite.email,
-    primaryCity: data.client.primary_city ?? sampleClientSite.primaryCity,
-    address: data.client.address ?? sampleClientSite.address,
-    galleryPhotos: data.client.gallery_photos.length ? data.client.gallery_photos : sampleClientSite.galleryPhotos,
-    pixelId: data.client.pixel_id ?? sampleClientSite.pixelId,
+    businessName: data.client.business_name ?? data.client.trading_name ?? "Unpublished website",
+    tradingName: data.client.trading_name ?? data.client.business_name ?? "Unpublished website",
+    tagline: data.client.tagline ?? "Add a production tagline in website settings.",
+    ownerName: "Business owner",
+    yearFounded: new Date().getFullYear(),
+    businessTypes: ["HVAC"],
+    jobsCompleted: 0,
+    aboutText: "Add the production about section in website settings before publishing.",
+    services: [],
+    servicePrices: {},
+    certifications: [],
+    isInsured: false,
+    hasGuarantee: false,
+    hasEmergency: false,
+    offersFreeQuote: true,
+    primaryCity: data.client.primary_city ?? "Service area",
+    address: data.client.address ?? undefined,
+    suburbs: [],
+    testimonials: [],
+    hours: Object.fromEntries(WEEK_DAYS.map((day) => [day, { open: "08:00", close: "17:00", closed: day === "Sunday" }])),
+    phone: data.client.phone ?? "",
+    whatsapp: data.client.whatsapp ?? data.client.phone ?? "",
+    email: data.client.email ?? "",
+    responseTime: "Response time pending",
+    galleryPhotos: data.client.gallery_photos,
+    pixelId: data.client.pixel_id ?? undefined,
     gaMeasurementId: data.client.ga_measurement_id ?? undefined,
     templateStyle,
-    subdomain: data.client.subdomain ?? sampleClientSite.subdomain,
+    brandColour: "navy",
+    subdomain: data.client.subdomain ?? undefined,
     customDomain: data.client.custom_domain ?? undefined
   };
 }
@@ -1207,11 +1287,12 @@ type AiPlan = {
 function WebsiteAssistantPanel({ data, previewPath, url }: { data: DashboardData; previewPath: string; url: string }) {
   const [status, setStatus] = useState<"idle" | "loading" | "ready" | "error">("idle");
   const [applyStatus, setApplyStatus] = useState<"idle" | "saving" | "saved" | "error">("idle");
-  const [provider, setProvider] = useState<"gemini" | "local" | null>(null);
+  const [provider, setProvider] = useState<"gemini" | null>(null);
   const [plan, setPlan] = useState<AiPlan | null>(null);
   const [draft, setDraft] = useState("");
   const [submittedPrompt, setSubmittedPrompt] = useState("");
-  const businessName = data.client.business_name ?? data.client.trading_name ?? "Cape Climate Pros";
+  const [attachments, setAttachments] = useState<File[]>([]);
+  const businessName = data.client.business_name ?? data.client.trading_name ?? "this website";
   const promptSuggestions = [
     "What should I improve first on this website?",
     "Rewrite the hero so it gets more enquiries.",
@@ -1232,19 +1313,19 @@ function WebsiteAssistantPanel({ data, previewPath, url }: { data: DashboardData
     setStatus("loading");
     setPlan(null);
     setSubmittedPrompt(request);
+    const requestBody = new FormData();
+    requestBody.set("mode", "restyle");
+    if (data.client.template_style) requestBody.set("preferredTemplateStyle", data.client.template_style);
+    requestBody.set("businessContext", defaultBusinessContext);
+    requestBody.set("currentWebsiteContext", request);
+    attachments.forEach((file) => requestBody.append("attachments", file));
 
     const response = await fetch("/api/ai/website-plan", {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        mode: "restyle",
-        preferredTemplateStyle: data.client.template_style || undefined,
-        businessContext: defaultBusinessContext,
-        currentWebsiteContext: request
-      })
+      body: requestBody
     });
 
-    const result = (await response.json()) as { provider?: "gemini" | "local"; plan?: AiPlan };
+    const result = (await response.json()) as { provider?: "gemini"; plan?: AiPlan };
     if (!response.ok || !result.plan) {
       setStatus("error");
       return;
@@ -1381,18 +1462,41 @@ function WebsiteAssistantPanel({ data, previewPath, url }: { data: DashboardData
             className="min-h-28 w-full resize-none rounded-2xl bg-transparent px-3 py-2 text-sm leading-6 text-foreground outline-none placeholder:text-muted-foreground"
             placeholder="Ask about copy, sections, trust proof, SEO, or what to fix before publishing..."
           />
+          {attachments.length > 0 && (
+            <div className="grid gap-2 px-2 pb-3">
+              {attachments.map((file) => (
+                <div key={`${file.name}-${file.size}`} className="flex items-center gap-2 rounded-xl bg-secondary px-3 py-2 text-xs font-semibold text-foreground">
+                  <FileText className="size-3.5 text-muted-foreground" />
+                  <span className="min-w-0 flex-1 truncate">{file.name}</span>
+                </div>
+              ))}
+            </div>
+          )}
           <div className="flex items-center justify-between gap-3 border-t border-border/70 px-1 pt-3">
             <span className="truncate text-xs font-medium text-muted-foreground">
               Preview: <Link href={previewPath} target="_blank" className="font-semibold text-foreground">{previewPath}</Link>
             </span>
-            <button
-              type="submit"
-              disabled={status === "loading" || draft.trim().length < 20}
-              className="inline-flex shrink-0 items-center gap-2 rounded-full bg-accent px-4 py-2.5 text-sm font-semibold text-accent-foreground shadow-[0_16px_32px_rgba(17,17,17,0.14)] transition hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-45"
-            >
-              <SendHorizontal className="size-4" />
-              {status === "loading" ? "Sending" : "Send"}
-            </button>
+            <div className="flex shrink-0 items-center gap-2">
+              <label className="grid size-10 cursor-pointer place-items-center rounded-full border border-border bg-white text-muted-foreground transition hover:text-foreground">
+                <span className="sr-only">Attach files for AI assistant</span>
+                <UploadCloud className="size-4" />
+                <input
+                  type="file"
+                  multiple
+                  className="sr-only"
+                  accept="image/png,image/jpeg,image/webp,application/pdf,text/plain,text/markdown,application/json,.md,.txt,.json,.pdf"
+                  onChange={(event) => setAttachments(Array.from(event.target.files ?? []).slice(0, 6))}
+                />
+              </label>
+              <button
+                type="submit"
+                disabled={status === "loading" || draft.trim().length < 20}
+                className="inline-flex items-center gap-2 rounded-full bg-accent px-4 py-2.5 text-sm font-semibold text-accent-foreground shadow-[0_16px_32px_rgba(17,17,17,0.14)] transition hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-45"
+              >
+                <SendHorizontal className="size-4" />
+                {status === "loading" ? "Sending" : "Send"}
+              </button>
+            </div>
           </div>
         </form>
 
@@ -1404,7 +1508,7 @@ function WebsiteAssistantPanel({ data, previewPath, url }: { data: DashboardData
 
 function TemplatesPanel({ data }: { data: DashboardData }) {
   const currentStyle = data.client.template_style ?? "aireco-dark";
-  const previewPath = `/sites/${data.client.subdomain ?? "cape-climate-pros"}`;
+  const previewPath = data.client.subdomain ? `/sites/${data.client.subdomain}` : "/dashboard?section=domain";
   const [inspirationFiles, setInspirationFiles] = useState<string[]>([]);
 
   function onInspirationUpload(event: React.ChangeEvent<HTMLInputElement>) {
@@ -1515,25 +1619,20 @@ function TemplatesPanel({ data }: { data: DashboardData }) {
 }
 
 function LeadsPanel({ data }: { data: DashboardData }) {
-  const leads = [
-    { name: "Thabo M.", request: "AC repair quote", source: "Contact form", channel: data.client.phone ? "Phone" : "Form", time: "12 min ago", status: "New" },
-    { name: "Nadia K.", request: "Maintenance plan", source: "Homepage CTA", channel: "WhatsApp", time: "Today", status: "Contacted" },
-    { name: "Blue Ridge Offices", request: "Commercial install", source: "Services page", channel: "Email", time: "Yesterday", status: "Qualified" },
-    { name: "Ruan P.", request: "Emergency call-out", source: "Mobile click", channel: "Call", time: "2 days ago", status: "Won" }
-  ];
+  const leads: Array<{ name: string; request: string; source: string; channel: string; time: string; status: "New" | "Contacted" | "Qualified" | "Won" }> = [];
 
   return (
     <div className="space-y-6">
       <section className="rounded-[24px] border border-white/74 bg-white/72 p-6 shadow-[0_22px_60px_rgba(15,23,42,0.08)] ring-1 ring-white/70 backdrop-blur-2xl">
         <div className="flex flex-wrap items-start justify-between gap-4">
           <PanelTitle title="Leads" subtitle="Captured enquiries, click-to-call activity, and follow-up status for this website." />
-          <StatusPill tone="good" icon={Users} label="36 demo enquiries" />
+          <StatusPill tone="neutral" icon={Users} label="Enquiry capture ready" />
         </div>
         <div className="mt-6 grid gap-4 md:grid-cols-4">
-          <MetricCard title="New leads" value="08" change="Needs reply" changeType="positive" icon={Users} />
-          <MetricCard title="Response SLA" value="18m" change="Median" changeType="positive" icon={Clock} />
-          <MetricCard title="Lead quality" value="72%" change="Qualified" changeType="positive" icon={Gauge} />
-          <MetricCard title="Top channel" value="Google" change="52%" changeType="neutral" icon={Globe2} />
+          <MetricCard title="New leads" value="0" change="Awaiting enquiries" changeType="neutral" icon={Users} />
+          <MetricCard title="Response SLA" value="Pending" change="No replies yet" changeType="neutral" icon={Clock} />
+          <MetricCard title="Lead quality" value="Pending" change="Needs data" changeType="neutral" icon={Gauge} />
+          <MetricCard title="Top channel" value="Pending" change="Connect" changeType="neutral" icon={Globe2} />
         </div>
       </section>
 
@@ -1548,7 +1647,7 @@ function LeadsPanel({ data }: { data: DashboardData }) {
                 <tr><th className="px-5 py-3">Lead</th><th className="px-5 py-3">Source</th><th className="px-5 py-3">Channel</th><th className="px-5 py-3">Time</th><th className="px-5 py-3">Status</th></tr>
               </thead>
               <tbody>
-                {leads.map((lead) => (
+                {leads.length ? leads.map((lead) => (
                   <tr key={`${lead.name}-${lead.request}`} className="border-t border-border bg-white/40 transition hover:bg-white/74">
                     <td className="px-5 py-4">
                       <span className="block font-semibold text-foreground">{lead.name}</span>
@@ -1561,7 +1660,11 @@ function LeadsPanel({ data }: { data: DashboardData }) {
                       <span className={cn("rounded-full px-2.5 py-1 text-xs font-bold", lead.status === "New" ? "bg-blue-50 text-blue-700" : lead.status === "Won" ? "bg-emerald-50 text-emerald-700" : "bg-secondary text-muted-foreground")}>{lead.status}</span>
                     </td>
                   </tr>
-                ))}
+                )) : (
+                  <tr className="border-t border-border bg-white/40">
+                    <td className="px-5 py-8 text-center text-sm font-semibold text-muted-foreground" colSpan={5}>No enquiries captured yet.</td>
+                  </tr>
+                )}
               </tbody>
             </table>
           </div>
@@ -1569,7 +1672,11 @@ function LeadsPanel({ data }: { data: DashboardData }) {
         <aside className="rounded-[24px] border border-white/74 bg-white/72 p-6 shadow-[0_22px_60px_rgba(15,23,42,0.08)] ring-1 ring-white/70 backdrop-blur-2xl">
           <PanelTitle title="Follow-up playbook" subtitle="The next actions that protect conversion." />
           <div className="mt-5 space-y-3">
-            <ActionLink icon={SendHorizontal} title="Reply to new enquiries" copy="Use the fastest available channel first." value="8" href={`mailto:${data.client.email ?? "hello@siterent.local"}?subject=New website enquiries`} external />
+            {data.client.email ? (
+              <ActionLink icon={SendHorizontal} title="Reply to new enquiries" copy="Use the fastest available channel first." value="Inbox" href={`mailto:${data.client.email}?subject=New website enquiries`} external />
+            ) : (
+              <ActionLink icon={SendHorizontal} title="Add reply email" copy="Set a business email before routing enquiries." value="Setup" href="/dashboard?section=business" />
+            )}
             <ActionLink icon={Database} title="Export lead records" copy="Download form and upload history." value="CSV" href="/dashboard?section=database" />
             <ActionLink icon={RadioTower} title="Connect tracking" copy="Attribute enquiries to campaigns." value="Setup" href="/dashboard?section=traffic" />
           </div>
@@ -1583,6 +1690,8 @@ function SettingsPanel({ data }: { data: DashboardData }) {
   const [activeTab, setActiveTab] = useState<"profile" | "business" | "domain" | "connections" | "billing" | "email" | "notifications">("billing");
   const [status, setStatus] = useState<"idle" | "saving" | "saved" | "error">("idle");
   const connectedCount = [data.client.ga_measurement_id, data.client.pixel_id, data.client.google_place_id, data.client.custom_domain].filter(Boolean).length;
+  const hasClientEmail = Boolean(data.client.email);
+  const hasTracking = Boolean(data.client.ga_measurement_id || data.client.pixel_id);
   const tabs = [
     { id: "profile", label: "Profile" },
     { id: "business", label: "Business" },
@@ -1592,11 +1701,7 @@ function SettingsPanel({ data }: { data: DashboardData }) {
     { id: "email", label: "Email" },
     { id: "notifications", label: "Notifications" }
   ] as const;
-  const invoices = [
-    { invoice: "Website subscription", date: "Jun 01, 2026", amount: "R499", status: "Pending", tracking: "SR-2026-0601" },
-    { invoice: "Launch setup", date: "May 24, 2026", amount: "R1,050", status: "Paid", tracking: "SR-2026-0524" },
-    { invoice: "Domain assistance", date: "May 12, 2026", amount: "R250", status: "Refund", tracking: "SR-2026-0512" }
-  ];
+  const invoices: Array<{ invoice: string; date: string; amount: string; status: string; tracking: string }> = [];
 
   async function onSaveSettings(formData: FormData) {
     setStatus("saving");
@@ -1658,11 +1763,15 @@ function SettingsPanel({ data }: { data: DashboardData }) {
         {activeTab === "domain" && (
           <SettingsSection title="Domain Settings" subtitle="Website-specific domain configuration.">
             <SettingsInput name="customDomain" label="Custom domain" defaultValue={data.client.custom_domain ?? ""} />
-            <ReadOnlySetting label="SiteRent subdomain" value={`${data.client.subdomain ?? "website"}.siterent.co.za`} />
+            <ReadOnlySetting label="SiteRent subdomain" value={data.client.subdomain ? `${data.client.subdomain}.siterent.co.za` : "Not reserved yet"} />
             <ReadOnlySetting label="SSL status" value={data.client.site_published ? "Active" : "Pending publish"} />
             <ReadOnlySetting label="Provider connection" value={data.client.custom_domain ? "Connected" : "Not connected"} />
             <div className="md:col-span-2">
-              <SettingsMiniTable rows={[["A", "@", "76.76.21.21"], ["CNAME", "www", `${data.client.subdomain ?? "website"}.siterent.co.za`], ["TXT", "_siterent", "verify-site-owner"]]} />
+              {data.client.subdomain ? (
+                <SettingsMiniTable rows={[["A", "@", "76.76.21.21"], ["CNAME", "www", `${data.client.subdomain}.siterent.co.za`], ["TXT", "_siterent", "verify-site-owner"]]} />
+              ) : (
+                <ReadOnlySetting label="DNS instructions" value="Publish a SiteRent subdomain before DNS records are generated." wide />
+              )}
             </div>
           </SettingsSection>
         )}
@@ -1672,7 +1781,7 @@ function SettingsPanel({ data }: { data: DashboardData }) {
             <SettingsInput name="gaMeasurementId" label="GA4 measurement ID" defaultValue={data.client.ga_measurement_id ?? ""} />
             <SettingsInput name="pixelId" label="Meta Pixel ID" defaultValue={data.client.pixel_id ?? ""} />
             <SettingsInput name="googlePlaceId" label="Google Place ID" defaultValue={data.client.google_place_id ?? ""} />
-            <ReadOnlySetting label="Domain providers" value="Cloudflare, GoDaddy, Namecheap ready" />
+            <ReadOnlySetting label="Domain providers" value="Supported: Cloudflare, GoDaddy, Namecheap" />
             <ReadOnlySetting label="Connection health" value={`${connectedCount}/4 connected`} wide />
           </SettingsSection>
         )}
@@ -1693,10 +1802,10 @@ function SettingsPanel({ data }: { data: DashboardData }) {
                 </button>
               </div>
               <div className="grid gap-4 md:grid-cols-2">
-                <SettingsInput name="cardName" label="Name on your Card" defaultValue={data.client.business_name ?? "SiteRent Customer"} />
-                <SettingsInput name="expiry" label="Expiry" defaultValue="02 / 2028" />
-                <SettingsInput name="cardNumber" label="Card Number" defaultValue="8269 9620 9292 2538" />
-                <SettingsInput name="cvv" label="CVV" defaultValue="****" />
+                <ReadOnlySetting label="Billing profile" value={data.client.business_name ?? data.client.trading_name ?? "Not configured"} />
+                <ReadOnlySetting label="Expiry" value="Managed by Peach Checkout" />
+                <ReadOnlySetting label="Card Number" value="No stored card shown" />
+                <ReadOnlySetting label="CVV" value="Never stored by SiteRent" />
               </div>
             </div>
             <div className="grid gap-5 border-b border-[#e5e7eb] pb-5 lg:grid-cols-[280px_1fr]">
@@ -1705,14 +1814,17 @@ function SettingsPanel({ data }: { data: DashboardData }) {
                 <p className="mt-1 text-sm text-muted-foreground">Where should invoices be sent?</p>
               </div>
               <div className="space-y-4">
-                <label className="flex items-start gap-3 text-sm text-foreground">
-                  <input type="radio" defaultChecked className="mt-1" name="invoiceEmail" />
-                  <span><span className="block font-medium">Send to the existing email</span><span className="text-muted-foreground">{data.client.email ?? "billing@siterent.local"}</span></span>
-                </label>
-                <label className="flex items-center gap-3 text-sm text-foreground">
-                  <input type="radio" name="invoiceEmail" />
-                  Add another email address
-                </label>
+                <div className="flex items-start gap-3 text-sm text-foreground">
+                  <input id="invoice-email-existing" type="radio" defaultChecked className="mt-1" name="invoiceEmail" />
+                  <label htmlFor="invoice-email-existing" className="block">
+                    <span className="block font-medium">Send to the existing email</span>
+                    <span className="block text-muted-foreground">{data.client.email ?? "No billing email configured"}</span>
+                  </label>
+                </div>
+                <div className="flex items-center gap-3 text-sm text-foreground">
+                  <input id="invoice-email-new" type="radio" name="invoiceEmail" />
+                  <label htmlFor="invoice-email-new">Add another email address</label>
+                </div>
               </div>
             </div>
             <SettingsBillingHistory invoices={invoices} />
@@ -1722,18 +1834,18 @@ function SettingsPanel({ data }: { data: DashboardData }) {
         {activeTab === "email" && (
           <SettingsSection title="Email" subtitle="Routing for invoices, lead alerts, and support updates.">
             <SettingsInput name="email" label="Primary email" defaultValue={data.client.email ?? ""} />
-            <ReadOnlySetting label="Lead alerts" value="Enabled for form submissions" />
-            <ReadOnlySetting label="Invoice emails" value="Sent monthly when billing is active" />
-            <ReadOnlySetting label="Support updates" value="Enabled" />
+            <ReadOnlySetting label="Lead alerts" value={hasClientEmail ? "Ready after form submissions" : "Add primary email first"} />
+            <ReadOnlySetting label="Invoice emails" value={data.client.subscription_status === "active" && hasClientEmail ? "Ready for active billing" : "Requires active billing and email"} />
+            <ReadOnlySetting label="Support updates" value={hasClientEmail ? "Can be sent to primary email" : "Add primary email first"} />
           </SettingsSection>
         )}
 
         {activeTab === "notifications" && (
-          <SettingsSection title="Notifications" subtitle="Choose which operational updates matter.">
-            <SettingsToggle label="New lead captured" enabled />
-            <SettingsToggle label="Website publish completed" enabled />
-            <SettingsToggle label="Domain requires attention" enabled />
-            <SettingsToggle label="Weekly analytics summary" enabled={false} />
+          <SettingsSection title="Notification readiness" subtitle="These switches show which alerts can run from the current production configuration.">
+            <SettingsToggle label="New lead captured" enabled={hasClientEmail} />
+            <SettingsToggle label="Website publish completed" enabled={data.client.site_published && hasClientEmail} />
+            <SettingsToggle label="Domain requires attention" enabled={Boolean(data.client.custom_domain || data.client.subdomain)} />
+            <SettingsToggle label="Weekly analytics summary" enabled={hasTracking && hasClientEmail} />
           </SettingsSection>
         )}
 
@@ -1815,7 +1927,7 @@ function SettingsBillingHistory({ invoices }: { invoices: { invoice: string; dat
             </tr>
           </thead>
           <tbody>
-            {invoices.map((invoice) => (
+            {invoices.length ? invoices.map((invoice) => (
               <tr key={invoice.tracking} className="border-t border-[#e5e7eb]">
                 <td className="px-5 py-4 font-medium text-foreground">{invoice.invoice}</td>
                 <td className="px-5 py-4 text-muted-foreground">{invoice.date}</td>
@@ -1825,7 +1937,11 @@ function SettingsBillingHistory({ invoices }: { invoices: { invoice: string; dat
                 </td>
                 <td className="px-5 py-4"><span className="block font-semibold text-blue-700">{invoice.tracking}</span><span className="text-xs text-muted-foreground">SiteRent billing account</span></td>
               </tr>
-            ))}
+            )) : (
+              <tr className="border-t border-[#e5e7eb]">
+                <td className="px-5 py-8 text-center text-sm font-semibold text-muted-foreground" colSpan={5}>No billing history recorded yet.</td>
+              </tr>
+            )}
           </tbody>
         </table>
       </div>
@@ -1855,8 +1971,8 @@ function TrafficPanel({ data }: { data: DashboardData }) {
         </div>
       </section>
       <div className="grid gap-4 md:grid-cols-3">
-        <MetricCard title="Visits" value={tracked ? "1,248" : "0"} change={tracked ? "+22%" : "Connect"} changeType={tracked ? "positive" : "neutral"} icon={Users} />
-        <MetricCard title="Leads" value={tracked ? "36" : "0"} change={tracked ? "+8" : "Pending"} changeType={tracked ? "positive" : "neutral"} icon={TrendingUp} />
+        <MetricCard title="Visits" value="0" change={tracked ? "Awaiting data" : "Connect"} changeType="neutral" icon={Users} />
+        <MetricCard title="Leads" value="0" change={tracked ? "Awaiting data" : "Pending"} changeType="neutral" icon={TrendingUp} />
         <MetricCard title="Source Health" value={tracked ? "Live" : "Missing"} change={tracked ? "GA/Pixel" : "Setup"} changeType={tracked ? "positive" : "negative"} icon={BarChart3} />
       </div>
       <TrackingSettingsForm client={data.client} mode="facebook" />
@@ -1878,7 +1994,7 @@ function ReviewsPanel({ data }: { data: DashboardData }) {
       </div>
       <div className="mt-5 rounded-2xl border border-white/70 bg-white/62 p-4">
         <p className="text-sm font-semibold text-foreground">Recommended trust stack</p>
-        <p className="mt-2 text-sm leading-6 text-muted-foreground">Show review rating near the hero, add recent project proof, and keep the contact CTA visible after the first scroll.</p>
+        <p className="mt-2 text-sm leading-6 text-muted-foreground">Show review proof near the hero, add recent project proof, and keep the contact CTA visible after the first scroll.</p>
       </div>
     </section>
   );
@@ -1894,8 +2010,8 @@ function SupportPanel({ displayName }: { displayName: string }) {
         <Info label="Escalation" value="Publishing issues first" />
       </div>
       <div className="mt-5 grid gap-4 md:grid-cols-2">
-        <ActionLink icon={Globe2} title="Domain or publish issue" copy="Use this for DNS, live site, and deploy problems." value="Priority" href="mailto:support@siterent.local?subject=Publishing support" external />
-        <ActionLink icon={CreditCard} title="Billing question" copy="Subscription, failed payment, or plan changes." value="Billing" href="mailto:support@siterent.local?subject=Billing support" external />
+        <ActionLink icon={Globe2} title="Domain or publish issue" copy="Use this for DNS, live site, and deploy problems." value="Priority" href="mailto:support@siterent.co.za?subject=Publishing support" external />
+        <ActionLink icon={CreditCard} title="Billing question" copy="Subscription, failed payment, or plan changes." value="Billing" href="mailto:support@siterent.co.za?subject=Billing support" external />
       </div>
     </section>
   );
@@ -1903,10 +2019,10 @@ function SupportPanel({ displayName }: { displayName: string }) {
 
 function OpsRail({ data }: { data: DashboardData }) {
   const readiness = [
-    { label: "Profile", value: data.client.business_name || data.client.trading_name ? 100 : 35 },
+    { label: "Profile", value: data.client.business_name || data.client.trading_name ? 100 : 0 },
     { label: "Assets", value: Math.min(data.client.gallery_photos.length * 18, 100) },
-    { label: "Tracking", value: data.client.ga_measurement_id || data.client.pixel_id ? 100 : 20 },
-    { label: "Billing", value: data.client.subscription_status === "active" ? 100 : 40 }
+    { label: "Tracking", value: data.client.ga_measurement_id || data.client.pixel_id ? 100 : 0 },
+    { label: "Billing", value: data.client.subscription_status === "active" ? 100 : 0 }
   ];
 
   return (
@@ -1923,7 +2039,7 @@ function OpsRail({ data }: { data: DashboardData }) {
               <span className="font-bold text-muted-foreground">{item.value}%</span>
             </div>
             <div className="h-2 overflow-hidden rounded-full bg-secondary">
-              <div className="h-full rounded-full bg-accent" style={{ width: `${Math.max(item.value, 8)}%` }} />
+              <div className="h-full rounded-full bg-accent" style={{ width: item.value > 0 ? `${Math.max(item.value, 8)}%` : "0%" }} />
             </div>
           </div>
         ))}
@@ -1978,7 +2094,7 @@ function TemplatePreview() {
     <div className="overflow-hidden rounded-xl border border-border bg-white text-[#101820]">
       <div className="bg-[#0a3d74] text-white">
         <div className="flex items-center justify-between border-b border-white/15 px-5 py-3 text-xs font-bold">
-          <span>Cape Climate Pros</span>
+          <span>Your Business</span>
           <span className="rounded-md bg-[#ff5b18] px-3 py-1">Book service</span>
         </div>
         <div className="grid min-h-[300px] gap-4 p-5 md:grid-cols-[1fr_0.75fr]">
@@ -1994,10 +2110,10 @@ function TemplatePreview() {
           <div className="relative min-h-[240px] overflow-hidden rounded-lg bg-[linear-gradient(135deg,#d7eaff,#4f83dc)]">
             <div className="absolute inset-x-4 bottom-4 rounded-lg bg-white p-4 text-[#101820] shadow-xl">
               <div className="flex items-center justify-between">
-                <span className="font-black">5.0 rating</span>
+                <span className="font-black">Trust proof</span>
                 <Star className="size-4 fill-[#ff5b18] text-[#ff5b18]" />
               </div>
-              <p className="mt-1 text-xs text-[#5c6670]">Best over 15.7k reviews</p>
+              <p className="mt-1 text-xs text-[#5c6670]">Add real reviews and project proof</p>
             </div>
           </div>
         </div>
@@ -2038,29 +2154,12 @@ function MetricCard({ title, value, change, changeType, icon: Icon }: { title: s
   );
 }
 
-function RevenuePanel() {
-  const values = [38, 46, 43, 58, 52, 66, 74, 69, 78, 86, 82, 94];
-  return (
-    <section className="h-[380px] rounded-[24px] border border-white/74 bg-white/62 p-5 shadow-[0_22px_60px_rgba(15,23,42,0.08)] ring-1 ring-white/70 backdrop-blur-2xl lg:col-span-2">
-      <PanelTitle title="Website Revenue Trend" subtitle="Subscription and conversion performance" />
-      <div className="mt-6 flex h-[280px] items-end gap-3 border-b border-l border-border/70 px-2 pb-2">
-        {values.map((value, index) => (
-          <div key={`${value}-${index}`} className="flex h-full flex-1 items-end gap-1">
-            <div className="w-full rounded-t-md bg-chart-1/70" style={{ height: `${value}%` }} />
-            <div className="hidden w-full rounded-t-md bg-chart-2/50 sm:block" style={{ height: `${Math.max(value - 8, 18)}%` }} />
-          </div>
-        ))}
-      </div>
-    </section>
-  );
-}
-
 function LaunchPanel({ profileReady, photos, trackingReady, published }: { profileReady: boolean; photos: number; trackingReady: boolean; published: boolean }) {
   const stages = [
-    { name: "Profile", value: profileReady ? 100 : 35, count: profileReady ? 1 : 0, color: "bg-chart-1" },
+    { name: "Profile", value: profileReady ? 100 : 0, count: profileReady ? 1 : 0, color: "bg-chart-1" },
     { name: "Photos", value: Math.min(photos * 18, 100), count: photos, color: "bg-chart-3" },
-    { name: "Tracking", value: trackingReady ? 100 : 20, count: trackingReady ? 1 : 0, color: "bg-chart-2" },
-    { name: "Publish", value: published ? 100 : 40, count: published ? 1 : 0, color: "bg-accent" }
+    { name: "Tracking", value: trackingReady ? 100 : 0, count: trackingReady ? 1 : 0, color: "bg-chart-2" },
+    { name: "Publish", value: published ? 100 : 0, count: published ? 1 : 0, color: "bg-accent" }
   ];
   return (
     <section className="h-[380px] rounded-[24px] border border-white/74 bg-white/62 p-5 shadow-[0_22px_60px_rgba(15,23,42,0.08)] ring-1 ring-white/70 backdrop-blur-2xl">
@@ -2073,7 +2172,7 @@ function LaunchPanel({ profileReady, photos, trackingReady, published }: { profi
               <span className="font-semibold text-foreground">{stage.value}%</span>
             </div>
             <div className="h-2 overflow-hidden rounded-full bg-secondary">
-              <div className={cn("h-full rounded-full", stage.color)} style={{ width: `${Math.max(stage.value, 8)}%` }} />
+              <div className={cn("h-full rounded-full", stage.color)} style={{ width: stage.value > 0 ? `${Math.max(stage.value, 8)}%` : "0%" }} />
             </div>
           </div>
         ))}

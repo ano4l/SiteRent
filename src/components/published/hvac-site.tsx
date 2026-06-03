@@ -21,12 +21,6 @@ import { BRAND_COLOURS, HVAC_SERVICES } from "@/lib/constants";
 import type { ClientSite, TemplateStyle } from "@/lib/types";
 import { cn, formatCurrencyZar } from "@/lib/utils";
 
-const fallbackHero =
-  "https://images.pexels.com/photos/5463575/pexels-photo-5463575.jpeg?auto=compress&cs=tinysrgb&w=1400";
-const fallbackTech =
-  "https://images.pexels.com/photos/6471913/pexels-photo-6471913.jpeg?auto=compress&cs=tinysrgb&w=900";
-const fallbackWork =
-  "https://images.pexels.com/photos/5463582/pexels-photo-5463582.jpeg?auto=compress&cs=tinysrgb&w=900";
 type HvacService = (typeof HVAC_SERVICES)[number];
 
 type TemplateContext = {
@@ -35,8 +29,8 @@ type TemplateContext = {
   foundedYears: number;
   whatsappHref: string;
   mapQuery: string;
-  heroImage: string;
-  ownerImage: string;
+  heroImage?: string;
+  ownerImage?: string;
   gallery: string[];
 };
 
@@ -50,9 +44,9 @@ export function HvacSite({ site }: { site: ClientSite }) {
       `Hi ${site.businessName}, I need help with HVAC service.`
     )}`,
     mapQuery: encodeURIComponent(site.address ?? `${site.businessName}, ${site.primaryCity}, South Africa`),
-    heroImage: site.heroPhotoUrl ?? site.galleryPhotos[0] ?? fallbackHero,
-    ownerImage: site.ownerPhotoUrl ?? site.galleryPhotos[1] ?? fallbackTech,
-    gallery: [site.galleryPhotos[0] ?? fallbackWork, site.galleryPhotos[1] ?? fallbackHero, site.galleryPhotos[2] ?? fallbackTech]
+    heroImage: site.heroPhotoUrl ?? site.galleryPhotos[0],
+    ownerImage: site.ownerPhotoUrl ?? site.galleryPhotos[1],
+    gallery: site.galleryPhotos
   };
 
   const style = site.templateStyle ?? styleFromBrand(site.brandColour);
@@ -96,17 +90,17 @@ function SoftOrangeTemplate(ctx: TemplateContext) {
             </div>
             <div className="mt-8 grid max-w-lg grid-cols-3 gap-4">
               <Stat value={`${foundedYears}+`} label="Years active" />
-              <Stat value={`${site.services.length}+`} label="Plan types" />
-              <Stat value={`${compact(site.jobsCompleted)}+`} label="Happy clients" />
+              <Stat value={site.services.length ? `${site.services.length}+` : "Pending"} label="Plan types" />
+              <Stat value={jobsCompletedValue(site)} label="Completed jobs" />
             </div>
           </div>
           <div className="grid gap-4 md:grid-cols-[1fr_0.75fr]">
             <Photo src={heroImage} alt={`${site.businessName} HVAC service`} className="min-h-[520px] rounded-[0_80px_0_80px]" priority />
             <div className="grid gap-4">
               <Photo src={ownerImage} alt={site.ownerName} className="min-h-[245px] rounded-[22px]" />
-              <RatingCard />
+              <RatingCard site={site} />
               <div className="rounded-[22px] bg-[#687143] p-5 text-white">
-                <p className="text-4xl font-black">{compact(site.jobsCompleted)}+</p>
+                <p className="text-4xl font-black">{jobsCompletedValue(site)}</p>
                 <p className="mt-1 text-sm font-bold text-white/80">Completed HVAC jobs</p>
               </div>
             </div>
@@ -167,7 +161,7 @@ function DarkPremiumTemplate(ctx: TemplateContext) {
 
         <div className="relative z-10 mx-auto grid max-w-[1280px] gap-10 px-5 pb-14 pt-8 md:px-8 lg:grid-cols-[1.05fr_0.95fr] lg:pb-18">
           <div>
-            <p className="text-xs font-black uppercase tracking-[0.12em] text-[#2d55c5]">Family-owned HVAC experts in {site.primaryCity}</p>
+            <p className="text-xs font-black uppercase tracking-[0.12em] text-[#2d55c5]">HVAC specialists in {site.primaryCity}</p>
             <h1 className="mt-5 max-w-4xl text-[clamp(2.8rem,5.9vw,5.9rem)] font-black uppercase leading-[0.9] tracking-normal">
               Trusted <span className="font-serif italic font-normal">HVAC</span>
               <br />
@@ -180,7 +174,7 @@ function DarkPremiumTemplate(ctx: TemplateContext) {
                 <Phone size={16} /> {site.phone}
               </a>
               <a href="#proof" className="inline-flex items-center gap-2 rounded-sm border border-[#c8c5ce] bg-white px-5 py-3 text-sm font-black">
-                <Star size={16} className="fill-[#ff3d00] text-[#ff3d00]" /> 5.0 Reviews
+                <Star size={16} className="fill-[#ff3d00] text-[#ff3d00]" /> {site.testimonials.length ? `${site.testimonials.length} testimonials` : "Review proof pending"}
               </a>
             </div>
             <div className="mt-8 grid gap-5 lg:grid-cols-[1fr_0.56fr]">
@@ -192,7 +186,7 @@ function DarkPremiumTemplate(ctx: TemplateContext) {
                 </div>
               </div>
               <div className="grid gap-3 self-stretch">
-                <BusinessMetric value={`${compact(site.jobsCompleted)}+`} label="completed jobs" />
+                <BusinessMetric value={jobsCompletedValue(site)} label="completed jobs" />
                 <BusinessMetric value={site.responseTime} label="average response" />
                 <BusinessMetric value={site.hasGuarantee ? site.guaranteePeriod ?? "12 months" : "Quality"} label="workmanship guarantee" />
               </div>
@@ -201,9 +195,9 @@ function DarkPremiumTemplate(ctx: TemplateContext) {
 
           <aside className="grid content-start gap-6 lg:pt-2">
             <section className="grid gap-4 pt-2 text-center md:grid-cols-3 lg:grid-cols-1 xl:grid-cols-3">
-              <ProofItem icon={ShieldCheck} title="Family-Owned Excellence" copy="Personal service from a local team that cares about the finish." />
-              <ProofItem icon={Award} title="Best Price Assurance" copy="Transparent options before any installation or repair begins." />
-              <ProofItem icon={BadgeCheck} title="Top-Rated Expertise" copy={site.certifications[0] ?? "Certified specialists with clean workmanship."} />
+              <ProofItem icon={ShieldCheck} title="Local service team" copy="Personal service from a team that cares about the finish." />
+              <ProofItem icon={Award} title="Clear estimates" copy="Transparent options before any installation or repair begins." />
+              <ProofItem icon={BadgeCheck} title="Service expertise" copy={site.certifications[0] ?? "Experienced specialists with clean workmanship."} />
             </section>
             <section className="border border-[#ded9d1] bg-white p-6 shadow-[0_24px_70px_rgba(27,22,31,0.10)]">
               <h2 className="text-center text-2xl font-black uppercase leading-none">
@@ -242,21 +236,21 @@ function DarkPremiumTemplate(ctx: TemplateContext) {
       <section id="proof" className="mx-auto grid max-w-[1520px] bg-[#fbfaf6] lg:grid-cols-[1fr_1fr]">
         <div className="px-6 py-16 md:px-12 lg:px-20">
           <h2 className="mx-auto max-w-xl text-center text-3xl font-black uppercase leading-[0.98] md:text-4xl">
-            Ensure <span className="font-serif italic font-normal">100%</span> homeowner satisfaction, every time
+            Showcase homeowner proof from real projects
           </h2>
           <div className="mt-5 flex justify-center gap-3">
-            <span className="rounded-sm border border-[#d8d4cf] bg-white px-4 py-2 text-xs font-black">Google 5.0 reviews</span>
-            <span className="rounded-sm border border-[#d8d4cf] bg-white px-4 py-2 text-xs font-black">4.9 local rating</span>
+            <span className="rounded-sm border border-[#d8d4cf] bg-white px-4 py-2 text-xs font-black">{site.testimonials.length ? `${site.testimonials.length} testimonials` : "Testimonials pending"}</span>
+            <span className="rounded-sm border border-[#d8d4cf] bg-white px-4 py-2 text-xs font-black">{site.galleryPhotos.length ? `${site.galleryPhotos.length} project photos` : "Project photos pending"}</span>
           </div>
           <TestimonialsCompact site={site} />
         </div>
         <div className="border-t border-[#ebe7e1] px-6 py-16 md:px-12 lg:border-l lg:border-t-0 lg:px-20">
           <h2 className="max-w-md text-3xl font-black uppercase leading-[0.98] md:text-4xl">
-            Brands we trust for {site.primaryCity}&apos;s <span className="font-serif italic font-normal">homeowners</span>
+            Services available for {site.primaryCity}&apos;s <span className="font-serif italic font-normal">homeowners</span>
           </h2>
           <div className="mt-10 grid grid-cols-2 gap-4 text-center text-sm font-black text-[#625d67] md:grid-cols-3">
-            {["Mitsubishi", "Trane", "RunTru", "Carrier", "Dunkirk", "Honeywell", "Aprilaire", "Samsung", "Daikin"].map((brand) => (
-              <span key={brand} className="border border-[#ece8e3] bg-white px-3 py-4">{brand}</span>
+            {serviceLabelsFor(site, 9).map((service) => (
+              <span key={service} className="border border-[#ece8e3] bg-white px-3 py-4">{service}</span>
             ))}
           </div>
         </div>
@@ -370,9 +364,9 @@ function ArmyBoldTemplate(ctx: TemplateContext) {
               Providing reliable heating and air conditioning services
             </h2>
             <ul className="mt-7 grid gap-3 text-sm font-bold">
-              <li>5 star ratings company</li>
-              <li>Thousands of happy clients</li>
-              <li>Guaranteed work</li>
+              <li>{site.testimonials.length ? "Customer testimonials supplied" : "Testimonials ready to add"}</li>
+              <li>{site.jobsCompleted ? `${compact(site.jobsCompleted)}+ completed jobs` : "Completed job count pending"}</li>
+              <li>{site.hasGuarantee ? "Guaranteed work" : "Workmanship details pending"}</li>
             </ul>
           </div>
           <Photo src={gallery[1]} alt="Air conditioning repair" className="min-h-[320px] rounded-[18px]" />
@@ -405,16 +399,16 @@ function BlueCorporateTemplate(ctx: TemplateContext) {
                 <SecondaryLink href="#services" label="Learn more" className="border-white text-white" />
               </div>
               <div className="mt-9 grid max-w-xl grid-cols-4 gap-5 text-sm font-bold text-white/75">
-                {["airbnb", "amazon", "FedEx", "Google"].map((brand) => <span key={brand}>{brand}</span>)}
+                {serviceLabelsFor(site, 4).map((service) => <span key={service}>{service}</span>)}
               </div>
             </div>
             <Photo src={heroImage} alt="HVAC installation" className="absolute inset-0 min-h-full rounded-none opacity-45" priority />
             <div className="relative z-10 self-end justify-self-end rounded-md bg-white p-4 text-[#101820] shadow-2xl">
               <div className="flex items-center gap-3">
                 <Star className="fill-[#ff5b18] text-[#ff5b18]" size={20} />
-                <p className="font-black">5.0 rating</p>
+                <p className="font-black">Trust proof</p>
               </div>
-              <p className="mt-1 text-sm font-semibold text-[#5c6670]">Best over 15.7k reviews</p>
+              <p className="mt-1 text-sm font-semibold text-[#5c6670]">{site.testimonials.length ? `${site.testimonials.length} testimonials supplied` : "Testimonials pending"}</p>
             </div>
           </section>
       </div>
@@ -510,17 +504,17 @@ function EditorialOrangeTemplate(ctx: TemplateContext) {
         <section className="grid gap-10 px-8 py-16 lg:grid-cols-[1fr_0.9fr] lg:px-16">
           <div>
             <h2 className="text-center text-4xl font-black uppercase leading-tight">
-              Ensure <span className="font-serif italic font-normal">100%</span> homeowner satisfaction, every time
+              Showcase homeowner proof from real projects
             </h2>
             <TestimonialsCompact site={site} />
           </div>
           <div>
             <h2 className="text-4xl font-black uppercase leading-tight">
-              Brands we trust for {site.primaryCity}&apos;s homeowners
+              Services available for {site.primaryCity}&apos;s homeowners
             </h2>
             <div className="mt-8 grid grid-cols-3 gap-4 text-center text-sm font-black text-[#6a6570]">
-              {["Mitsubishi", "Trane", "Carrier", "Dunkirk", "Honeywell", "Aprilaire"].map((brand) => (
-                <span key={brand} className="border border-[#ece8e3] py-4">{brand}</span>
+              {serviceLabelsFor(site, 6).map((service) => (
+                <span key={service} className="border border-[#ece8e3] py-4">{service}</span>
               ))}
             </div>
           </div>
@@ -654,26 +648,26 @@ function AwardsCoupons({ ctx, accent }: { ctx: TemplateContext; accent: string }
   return (
     <section className="bg-white py-16">
       <div className="mx-auto max-w-7xl px-5 text-center">
-        <Kicker label="Award winning" style={{ color: accent }} />
-        <h2 className="mt-3 text-4xl font-black">5-star service excellence award</h2>
+        <Kicker label="Service proof" style={{ color: accent }} />
+        <h2 className="mt-3 text-4xl font-black">Trust and service details</h2>
         <div className="mx-auto mt-10 grid max-w-4xl gap-6 md:grid-cols-3">
-          {["Most active clients", "Top rated specialists", "Certified local team"].map((label, index) => (
+          {["Client proof", "Service specialists", "Certified local team"].map((label, index) => (
             <article key={label} className={cn("rounded-full border border-[#ddd6ce] p-8", index === 1 && "text-white")} style={index === 1 ? { backgroundColor: accent } : undefined}>
               <Award className="mx-auto" />
               <p className="mt-4 text-sm font-black">{label}</p>
-              <p className="mt-2 text-xs opacity-70">Recognition for quality HVAC service.</p>
+              <p className="mt-2 text-xs opacity-70">Details supplied during onboarding.</p>
             </article>
           ))}
         </div>
         <div className="mt-16">
           <Kicker label="Offers" style={{ color: accent }} />
-          <h2 className="mt-3 text-3xl font-black">Our coupons</h2>
+          <h2 className="mt-3 text-3xl font-black">Service options</h2>
           <div className="mx-auto mt-8 grid max-w-4xl gap-4 md:grid-cols-3">
-            {["Save on repair", "Emergency repair", "New system"].map((title, index) => (
+            {["Repair requests", "Emergency support", "New installations"].map((title) => (
               <article key={title} className="rounded-lg bg-[#fff3ec] p-6">
                 <Snowflake className="mx-auto" style={{ color: accent }} />
                 <h3 className="mt-4 text-xl font-black">{title}</h3>
-                <p className="mt-4 inline-flex rounded-md bg-white px-5 py-3 text-2xl font-black" style={{ color: accent }}>{index === 0 ? "10%" : index === 1 ? "R250" : "R300"} off</p>
+                <p className="mt-4 inline-flex rounded-md bg-white px-5 py-3 text-sm font-black" style={{ color: accent }}>Quote on request</p>
               </article>
             ))}
           </div>
@@ -703,6 +697,14 @@ function ServiceCards({ site, accent }: { site: ClientSite; accent: string }) {
 }
 
 function TestimonialsCompact({ site }: { site: ClientSite }) {
+  if (!site.testimonials.length) {
+    return (
+      <div className="mt-8 rounded-lg border border-[#ece8e3] bg-white p-5 text-center text-sm font-bold text-[#625d67]">
+        Testimonials can be added from onboarding or the dashboard once real customer proof is available.
+      </div>
+    );
+  }
+
   return (
     <div className="mt-8 grid gap-5 md:grid-cols-2">
       {site.testimonials.slice(0, 2).map((testimonial) => (
@@ -746,10 +748,16 @@ function SiteFooter({ ctx, dark = false }: { ctx: TemplateContext; dark?: boolea
   );
 }
 
-function Photo({ src, alt, className, priority = false }: { src: string; alt: string; className?: string; priority?: boolean }) {
+function Photo({ src, alt, className, priority = false }: { src?: string; alt: string; className?: string; priority?: boolean }) {
   return (
     <div className={cn("relative overflow-hidden bg-[#dddddd]", className)}>
-      <Image src={src} alt={alt} fill sizes="(min-width: 1024px) 45vw, 100vw" className="object-cover transition duration-700 hover:scale-[1.03]" priority={priority} />
+      {src ? (
+        <Image src={src} alt={alt} fill sizes="(min-width: 1024px) 45vw, 100vw" className="object-cover transition duration-700 hover:scale-[1.03]" priority={priority} />
+      ) : (
+        <div className="absolute inset-0 grid place-items-center bg-[linear-gradient(135deg,#f8fafc,#e5e7eb)] p-6 text-center text-xs font-bold uppercase tracking-[0.14em] text-slate-500">
+          Production image pending
+        </div>
+      )}
     </div>
   );
 }
@@ -846,13 +854,13 @@ function HeroServiceTile({ icon: Icon, label }: { icon: typeof Snowflake; label:
   );
 }
 
-function RatingCard() {
+function RatingCard({ site }: { site: ClientSite }) {
   return (
     <div className="rounded-[18px] bg-white p-5 shadow-[0_14px_34px_rgba(0,0,0,0.08)]">
-      <p className="text-sm font-black">5.0 Rating</p>
-      <div className="mt-2 flex gap-1 text-[#ff5b18]">{Array.from({ length: 5 }).map((_, index) => <Star key={index} size={16} className="fill-current" />)}</div>
-      <p className="mt-3 text-3xl font-black">100K+</p>
-      <p className="text-xs font-semibold text-muted">Rated best over 15.7k reviews</p>
+      <p className="text-sm font-black">Trust proof</p>
+      <div className="mt-2 flex gap-1 text-[#ff5b18]">{Array.from({ length: 5 }).map((_, index) => <Star key={index} size={16} />)}</div>
+      <p className="mt-3 text-3xl font-black">{site.testimonials.length || "Pending"}</p>
+      <p className="text-xs font-semibold text-muted">{site.testimonials.length ? "testimonials supplied" : "Add real testimonials when ready"}</p>
     </div>
   );
 }
@@ -886,4 +894,17 @@ function FloatingWhatsApp({ href, colour }: { href: string; colour: string }) {
 function compact(value: number) {
   if (value >= 1000) return `${Math.round(value / 100) / 10}K`;
   return String(value);
+}
+
+function jobsCompletedValue(site: ClientSite) {
+  return site.jobsCompleted > 0 ? `${compact(site.jobsCompleted)}+` : "Pending";
+}
+
+function serviceLabelsFor(site: ClientSite, limit: number) {
+  const labels = site.services
+    .map((key) => HVAC_SERVICES.find((item) => item.key === key)?.label ?? key)
+    .filter(Boolean)
+    .slice(0, limit);
+
+  return labels.length ? labels : ["Services pending"];
 }

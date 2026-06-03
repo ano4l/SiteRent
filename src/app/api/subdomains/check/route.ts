@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { isValidSubdomain } from "@/lib/domains";
+import { getMissingSupabaseServiceConfig, productionConfigError } from "@/lib/env";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { slugifySubdomain } from "@/lib/utils";
 
@@ -19,12 +20,16 @@ export async function GET(request: Request) {
   const subdomain = slugifySubdomain(parsed.data.subdomain);
   const valid = isValidSubdomain(subdomain);
   const supabase = createSupabaseAdminClient();
-  let exists = false;
 
-  if (supabase) {
-    const { data } = await supabase.from("clients").select("id").eq("subdomain", subdomain).maybeSingle();
-    exists = Boolean(data);
+  if (!supabase) {
+    return NextResponse.json(
+      productionConfigError("Supabase is required before subdomain availability can be checked.", getMissingSupabaseServiceConfig()),
+      { status: 503 }
+    );
   }
+
+  const { data } = await supabase.from("clients").select("id").eq("subdomain", subdomain).maybeSingle();
+  const exists = Boolean(data);
 
   return NextResponse.json({
     subdomain,

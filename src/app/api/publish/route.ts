@@ -2,6 +2,8 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { getCustomDomainInstructions, getSiteUrl, isValidSubdomain, PLATFORM_DOMAIN } from "@/lib/domains";
 import { queuePublishConfirmationEmail } from "@/lib/email/publish-confirmation";
+import { getMissingSupabaseServiceConfig, hasSupabaseBrowserConfig, productionConfigError } from "@/lib/env";
+import { getAuthenticatedUserId } from "@/lib/client-auth";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { addDomainToVercelProject } from "@/lib/vercel";
 import { slugifySubdomain } from "@/lib/utils";
@@ -26,6 +28,13 @@ export async function POST(request: Request) {
   }
 
   const supabase = createSupabaseAdminClient();
+  if (!supabase) {
+    return NextResponse.json(
+      productionConfigError("Supabase is required before a website can be published in production.", getMissingSupabaseServiceConfig()),
+      { status: 503 }
+    );
+  }
+
   const siteUrl = getSiteUrl(subdomain);
   const customDomain = payload.data.customDomain?.trim() || null;
   const customDomainInstructions = customDomain ? getCustomDomainInstructions(customDomain) : null;
@@ -38,52 +47,70 @@ export async function POST(request: Request) {
   let clientEmail: string | null = null;
   let businessName = "Your website";
 
-  if (supabase) {
-    const { data: existing } = await supabase
-      .from("clients")
-      .select("id")
-      .eq("subdomain", subdomain)
-      .neq("id", payload.data.clientId)
-      .maybeSingle();
-
-    if (existing) {
-      return NextResponse.json({ error: "Subdomain is already taken" }, { status: 409 });
-    }
-
-    const { data: client } = await supabase
-      .from("clients")
-      .select("business_name,trading_name,email,next_billing_date")
-      .eq("id", payload.data.clientId)
-      .maybeSingle();
-
-    clientEmail = client?.email ?? null;
-    businessName = client?.business_name ?? client?.trading_name ?? businessName;
-
-    const { error } = await supabase
-      .from("clients")
-      .update({
-        subdomain,
-        custom_domain: customDomain,
-        site_published: true,
-        published_at: new Date().toISOString()
-      })
-      .eq("id", payload.data.clientId);
-
-    if (error) {
-      return NextResponse.json({ error: error.message }, { status: 500 });
-    }
-
-    await supabase.from("billing_events").insert({
-      client_id: payload.data.clientId,
-      event_type: "site_published",
-      status: "published",
-      payload: {
-        site_url: siteUrl,
-        custom_domain: customDomain,
-        platform_domain: PLATFORM_DOMAIN
-      }
-    });
+  const userId = hasSupabaseBrowserConfig() ? await getAuthenticatedUserId() : null;
+  if (hasSupabaseBrowserConfig() && !userId) {
+    return NextResponse.json({ error: "Authentication required" }, { status: 401 });
   }
+
+  const clientQuery = supabase
+    .from("clients")
+    .select("id,business_name,trading_name,email,next_billing_date")
+    .eq("id", payload.data.clientId);
+
+  if (userId) {
+    clientQuery.eq("user_id", userId);
+  }
+
+  const { data: client } = await clientQuery.maybeSingle();
+
+  if (!client) {
+    return NextResponse.json({ error: "Client not found" }, { status: 404 });
+  }
+
+  const { data: existing } = await supabase
+    .from("clients")
+    .select("id")
+    .eq("subdomain", subdomain)
+    .neq("id", payload.data.clientId)
+    .maybeSingle();
+
+  if (existing) {
+    return NextResponse.json({ error: "Subdomain is already taken" }, { status: 409 });
+  }
+
+  clientEmail = client?.email ?? null;
+  businessName = client?.business_name ?? client?.trading_name ?? businessName;
+
+  const updateQuery = supabase
+    .from("clients")
+    .update({
+      subdomain,
+      custom_domain: customDomain,
+      site_published: true,
+      published_at: new Date().toISOString()
+    })
+    .eq("id", payload.data.clientId);
+
+  if (userId) {
+    updateQuery.eq("user_id", userId);
+  }
+
+  const { error } = await updateQuery;
+
+  if (error) {
+    return NextResponse.json({ error: error.message }, { status: 500 });
+  }
+
+  await supabase.from("billing_events").insert({
+    client_id: payload.data.clientId,
+    event_type: "site_published",
+    status: "published",
+    payload: {
+      site_url: siteUrl,
+      custom_domain: customDomain,
+      platform_domain: PLATFORM_DOMAIN
+    }
+  });
 
   if (customDomain) {
     try {
@@ -103,13 +130,6 @@ export async function POST(request: Request) {
     siteUrl,
     dashboardUrl: "/dashboard"
   });
-
-  if (!supabase && customDomain) {
-    vercelDomain = {
-      configured: false,
-      skippedReason: "Local mode: Vercel domain registration skipped."
-    };
-  }
 
   return NextResponse.json({
     ok: true,

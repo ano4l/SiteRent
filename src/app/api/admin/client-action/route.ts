@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { getSubscriptionPeriodEnd } from "@/lib/billing";
-import { hasSupabaseBrowserConfig } from "@/lib/env";
+import { getMissingSupabaseServiceConfig, hasSupabaseBrowserConfig, productionConfigError } from "@/lib/env";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
@@ -22,12 +22,13 @@ export async function POST(request: Request) {
 
   const supabase = createSupabaseAdminClient();
   if (!supabase) {
-    return NextResponse.json({
-      ok: true,
-      mode: "local",
-      action: payload.data.action,
-      completedAt: new Date().toISOString()
-    });
+    return NextResponse.json(
+      productionConfigError(
+        "Supabase service role is required before admin client actions can run in production.",
+        getMissingSupabaseServiceConfig()
+      ),
+      { status: 503 }
+    );
   }
 
   if (hasSupabaseBrowserConfig()) {

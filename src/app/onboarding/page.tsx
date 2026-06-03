@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import Image from "next/image";
 import Link from "next/link";
 import { ArrowLeft, ArrowRight, Check, CheckCircle2, Clock, Globe2, ImageIcon, LockKeyhole, MonitorCheck, Rocket, Sparkles, Upload } from "lucide-react";
 import { BRAND_COLOURS, HVAC_SERVICES, ONBOARDING_STEPS, RESPONSE_TIMES, TEMPLATE_STYLES, WEEK_DAYS } from "@/lib/constants";
@@ -60,6 +61,27 @@ type FormState = {
   terms: boolean;
 };
 
+type AiBuilderDraft = {
+  businessName?: string;
+  primaryCity?: string;
+  serviceArea?: string;
+  contactName?: string;
+  phone?: string;
+  email?: string;
+  servicesAndProof?: string;
+  plan?: {
+    summary?: string;
+    templateStyle?: string;
+    hero?: {
+      headline?: string;
+      subheadline?: string;
+    };
+    serviceCopy?: Array<{
+      serviceKey?: string;
+    }>;
+  };
+};
+
 const emptyTestimonials: TestimonialInput[] = [
   { name: "", suburb: "", quote: "" },
   { name: "", suburb: "", quote: "" },
@@ -81,7 +103,7 @@ const initialState: FormState = {
   servicePrices: {},
   customServices: [],
   certifications: "",
-  isInsured: true,
+  isInsured: false,
   hasGuarantee: false,
   guaranteePeriod: "12 months",
   hasEmergency: false,
@@ -108,53 +130,51 @@ const initialState: FormState = {
   terms: false
 };
 
-const demoState: FormState = {
-  ...initialState,
-  tradingName: "Cape Climate Pros",
-  tagline: "Fast, reliable air-conditioning repairs and installations.",
-  ownerName: "Sam Rivera",
-  yearFounded: "2016",
-  jobsCompleted: "850+",
-  aboutText: "Cape Climate Pros helps homes and businesses stay comfortable with prompt HVAC repairs, planned maintenance, and clean installations across Cape Town.",
-  services: ["aircon-installation", "aircon-repairs", "maintenance"],
-  servicePrices: {
-    "aircon-installation": "1200",
-    "aircon-repairs": "650",
-    maintenance: "450"
-  },
-  customServices: [
-    { key: "plumbing-support", label: "Plumbing support", price: "650" }
-  ],
-  certifications: "SAQCC registered technicians",
-  hasGuarantee: true,
-  guaranteePeriod: "12 months",
-  hasEmergency: true,
-  primaryCity: "Cape Town",
-  address: "12 Bree Street, Cape Town",
-  suburbs: "Sea Point, Claremont, Gardens, Durbanville, Bellville",
-  testimonials: [
-    { name: "Nadia K.", suburb: "Claremont", quote: "They arrived the same day and had our office cooling again before lunch." },
-    { name: "Thabo M.", suburb: "Sea Point", quote: "Clear pricing, neat work, and a friendly team." },
-    { name: "Ruan P.", suburb: "Durbanville", quote: "The maintenance plan has saved us from two breakdowns already." }
-  ],
-  phone: "+27 21 555 0198",
-  whatsapp: "+27 82 555 0198",
-  email: "hello@capeclimate.example",
-  facebookUrl: "https://facebook.com/capeclimatepros",
-  instagramUrl: "https://instagram.com/capeclimatepros",
-  pixelId: "1234567890",
-  templateStyle: "coolair-blue",
-  brandColour: "navy",
-  logoUrl: "/window.svg",
-  heroPhotoUrl: "/globe.svg",
-  ownerPhotoUrl: "/file.svg",
-  subdomain: "cape-climate-pros",
-  customDomain: "capeclimatepros.co.za",
-  terms: true
-};
-
-const localStorageKey = "siterent-onboarding-v1";
+const localStorageKey = "siterent-onboarding-v2";
 const publishResultStorageKey = "siterent-last-publish-result";
+const aiBuilderDraftStorageKey = "siterent-ai-builder-draft-v2";
+
+function servicesFromAiDraft(draft: AiBuilderDraft) {
+  const text = [
+    draft.servicesAndProof,
+    draft.plan?.summary,
+    draft.plan?.hero?.headline,
+    ...(draft.plan?.serviceCopy?.map((item) => item.serviceKey ?? "") ?? [])
+  ].join(" ").toLowerCase();
+
+  const selected = HVAC_SERVICES
+    .filter((service) => {
+      const labelWords = service.label.toLowerCase().split(/\s+/);
+      return text.includes(service.key) || labelWords.some((word) => word.length > 4 && text.includes(word));
+    })
+    .map((service) => service.key);
+
+  return selected.length ? selected : HVAC_SERVICES.slice(0, 3).map((service) => service.key);
+}
+
+function formFromAiDraft(draft: AiBuilderDraft, current: FormState): FormState {
+  const businessName = draft.businessName?.trim() || current.tradingName;
+  const templateStyle =
+    draft.plan?.templateStyle && draft.plan.templateStyle in TEMPLATE_STYLES
+      ? (draft.plan.templateStyle as TemplateStyle)
+      : current.templateStyle;
+
+  return {
+    ...current,
+    tradingName: businessName,
+    tagline: draft.plan?.hero?.subheadline?.trim() || current.tagline,
+    ownerName: draft.contactName?.trim() || current.ownerName,
+    aboutText: draft.plan?.summary?.trim() || draft.servicesAndProof?.trim() || current.aboutText,
+    services: servicesFromAiDraft(draft),
+    primaryCity: draft.primaryCity?.trim() || current.primaryCity,
+    suburbs: draft.serviceArea?.trim() || current.suburbs,
+    phone: draft.phone?.trim() || current.phone,
+    whatsapp: draft.phone?.trim() || current.whatsapp,
+    email: draft.email?.trim() || current.email,
+    templateStyle,
+    subdomain: businessName ? slugifySubdomain(businessName) : current.subdomain
+  };
+}
 
 export default function OnboardingPage() {
   const [step, setStep] = useState(0);
@@ -162,9 +182,17 @@ export default function OnboardingPage() {
   const [clientId, setClientId] = useState<string | null>(null);
   const [errors, setErrors] = useState<string[]>([]);
   const [saveStatus, setSaveStatus] = useState<"idle" | "saving" | "saved" | "error" | "published">("idle");
-  const [paymentStatus, setPaymentStatus] = useState<"idle" | "starting" | "redirecting" | "local" | "error">("idle");
+  const [paymentStatus, setPaymentStatus] = useState<"idle" | "starting" | "redirecting" | "error">("idle");
   const [publishStatus, setPublishStatus] = useState<"idle" | "publishing" | "error">("idle");
   const [subdomainStatus, setSubdomainStatus] = useState<"idle" | "checking" | "available" | "taken" | "invalid">("idle");
+  const errorSummaryRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (errors.length > 0) {
+      errorSummaryRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
+      errorSummaryRef.current?.focus();
+    }
+  }, [errors]);
 
   const percent = Math.round(((step + 1) / ONBOARDING_STEPS.length) * 100);
   const theme = BRAND_COLOURS[form.brandColour];
@@ -201,15 +229,25 @@ export default function OnboardingPage() {
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
-    const demoMode = params.get("demo") === "1";
+    const fromBuilder = params.get("fromBuilder") === "1";
     const requestedTemplate = params.get("template");
     const requestedStep = Number(params.get("step"));
 
-    if (demoMode) {
-      setForm(demoState);
-      setSaveStatus("saved");
-      window.localStorage.setItem(localStorageKey, JSON.stringify({ form: demoState, step: 0, clientId: "local-client" }));
-      setClientId("local-client");
+    if (fromBuilder) {
+      const draftJson = window.localStorage.getItem(aiBuilderDraftStorageKey);
+      if (draftJson) {
+        try {
+          const draft = JSON.parse(draftJson) as AiBuilderDraft;
+          const nextForm = formFromAiDraft(draft, initialState);
+          setForm(nextForm);
+          setStep(0);
+          setSaveStatus("saved");
+          window.localStorage.setItem(localStorageKey, JSON.stringify({ form: nextForm, step: 0, clientId: null }));
+          window.localStorage.removeItem(aiBuilderDraftStorageKey);
+        } catch {
+          window.localStorage.removeItem(aiBuilderDraftStorageKey);
+        }
+      }
     }
     if (requestedTemplate && requestedTemplate in TEMPLATE_STYLES) {
       update("templateStyle", requestedTemplate as TemplateStyle);
@@ -318,17 +356,12 @@ export default function OnboardingPage() {
     if (step === 0) {
       if (!form.tradingName) missing.push("Trading name");
       if (!form.ownerName) missing.push("Owner name");
-      if (!form.yearFounded) missing.push("Year founded");
       if (!form.aboutText) missing.push("About paragraph");
     }
     if (step === 1) {
       if (form.services.length === 0) missing.push("At least one service");
       if (!form.primaryCity) missing.push("Primary city");
-      if (!form.address) missing.push("Business address");
       if (!form.suburbs) missing.push("Suburbs served");
-    }
-    if (step === 2 && !form.logoUrl) {
-      missing.push("Logo upload");
     }
     if (step === 3) {
       if (!form.phone) missing.push("Primary phone");
@@ -354,7 +387,7 @@ export default function OnboardingPage() {
         "Content-Type": "application/json"
       },
       body: JSON.stringify({
-        clientId: clientId && clientId !== "local-client" ? clientId : undefined,
+        clientId: clientId ?? undefined,
         currentStep: nextStep,
         data
       })
@@ -398,13 +431,18 @@ export default function OnboardingPage() {
     if (!saved) return;
 
     setPaymentStatus("starting");
+    if (!clientId) {
+      setPaymentStatus("error");
+      return;
+    }
+
     const response = await fetch("/api/peach/checkout", {
       method: "POST",
       headers: {
         "Content-Type": "application/json"
       },
       body: JSON.stringify({
-        clientId: clientId && clientId !== "local-client" ? clientId : undefined,
+        clientId,
         businessName: form.tradingName || "SiteRent Client",
         email: form.email,
         phone: form.phone,
@@ -418,14 +456,7 @@ export default function OnboardingPage() {
     }
 
     const payload = (await response.json()) as
-      | { mode: "local"; message?: string }
       | { mode: "sandbox" | "live"; url: string; fields: Record<string, string | number | undefined> };
-
-    if (payload.mode === "local") {
-      setPaymentStatus("local");
-      setStep(5);
-      return;
-    }
 
     setPaymentStatus("redirecting");
     const paymentForm = document.createElement("form");
@@ -449,13 +480,19 @@ export default function OnboardingPage() {
     if (!validateCurrentStep()) return;
 
     setPublishStatus("publishing");
+    if (!clientId) {
+      setPublishStatus("error");
+      setSaveStatus("error");
+      return;
+    }
+
     const response = await fetch("/api/publish", {
       method: "POST",
       headers: {
         "Content-Type": "application/json"
       },
       body: JSON.stringify({
-        clientId: clientId && clientId !== "local-client" ? clientId : "00000000-0000-4000-8000-000000000000",
+        clientId,
         subdomain: form.subdomain,
         customDomain: form.customDomain,
         acceptedTerms: form.terms
@@ -482,9 +519,9 @@ export default function OnboardingPage() {
   }
 
   return (
-    <main className="min-h-screen overflow-hidden bg-[radial-gradient(circle_at_12%_10%,rgba(219,234,254,0.86),transparent_30%),radial-gradient(circle_at_88%_12%,rgba(204,251,241,0.52),transparent_32%),linear-gradient(135deg,#f2f4f8_0%,#eef2f6_100%)] p-5 text-foreground md:p-8">
+    <main className="min-h-screen overflow-hidden bg-[radial-gradient(circle_at_12%_10%,rgba(219,234,254,0.86),transparent_30%),radial-gradient(circle_at_88%_12%,rgba(204,251,241,0.52),transparent_32%),linear-gradient(135deg,var(--app-bg)_0%,var(--app-bg-soft)_100%)] p-5 text-foreground md:p-8">
       <div className="ui-enter mx-auto grid min-h-[calc(100vh-4rem)] max-w-7xl overflow-hidden rounded-[28px] border border-white/80 bg-white shadow-[0_32px_90px_rgba(15,23,42,0.14)] lg:grid-cols-[250px_minmax(0,1fr)_420px]">
-        <aside className="border-b border-[#edf0f4] bg-white p-6 lg:border-b-0 lg:border-r">
+        <aside className="border-b border-app-line-soft bg-white p-6 lg:border-b-0 lg:border-r">
           <Link href="/dashboard" className="flex items-center gap-3 text-lg font-bold">
             <SiteRentOnboardingMark />
             SiteRent
@@ -496,7 +533,7 @@ export default function OnboardingPage() {
           </div>
           <div className="mt-8 flex gap-3">
             {ONBOARDING_STEPS.map((label, index) => (
-              <span key={label} className={cn("h-1.5 flex-1 rounded-full transition-all duration-500", index <= step ? "bg-foreground" : "bg-[#e5e7eb]")} />
+              <span key={label} className={cn("h-1.5 flex-1 rounded-full transition-all duration-500", index <= step ? "bg-foreground" : "bg-app-divider")} />
             ))}
           </div>
           <div className="mt-3 text-sm font-medium text-muted-foreground">{percent}% complete</div>
@@ -507,8 +544,8 @@ export default function OnboardingPage() {
                 type="button"
                 onClick={() => index <= step && setStep(index)}
                 className={cn(
-                  "pressable flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-sm font-medium transition hover:bg-[#f4f6f8]",
-                  index === step && "bg-[#f4f6f8] text-foreground",
+                  "pressable flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-sm font-medium transition hover:bg-app-surface",
+                  index === step && "bg-app-surface text-foreground",
                   index < step && "text-blue-700",
                   index > step && "text-muted-foreground"
                 )}
@@ -520,7 +557,7 @@ export default function OnboardingPage() {
               </button>
             ))}
           </nav>
-          <div className="mt-8 rounded-xl bg-[#f4f6f8] p-3">
+          <div className="mt-8 rounded-xl bg-app-surface p-3">
             <p className="text-xs font-bold uppercase tracking-[0.14em] text-muted-foreground">First-value checklist</p>
             <div className="mt-3 space-y-2">
               {activationTasks.map((task) => (
@@ -533,7 +570,7 @@ export default function OnboardingPage() {
               ))}
             </div>
           </div>
-          <p className="mt-3 rounded-xl bg-[#f4f6f8] p-3 text-xs font-medium leading-5 text-muted-foreground">
+          <p className="mt-3 rounded-xl bg-app-surface p-3 text-xs font-medium leading-5 text-muted-foreground">
             {saveStatus === "idle" && "Progress saves when you continue."}
             {saveStatus === "saving" && "Saving progress..."}
             {saveStatus === "saved" && "Progress saved."}
@@ -542,14 +579,23 @@ export default function OnboardingPage() {
           </p>
         </aside>
 
-        {errors.length > 0 && (
-          <div className="rounded-md border border-red-200 bg-red-50 p-4 text-sm text-red-800 lg:col-span-3">
-            Please complete: {errors.join(", ")}.
-          </div>
-        )}
-
-          <section className="stagger border-[#edf0f4] bg-white p-6 md:p-10 lg:border-r overflow-hidden">
+          <section className="stagger border-app-line-soft bg-white p-6 md:p-10 lg:border-r overflow-hidden">
             <OnboardingMomentum step={step} percent={percent} />
+            {errors.length > 0 && (
+              <div
+                ref={errorSummaryRef}
+                role="alert"
+                tabIndex={-1}
+                className="mb-6 rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-800 outline-none focus-visible:ring-2 focus-visible:ring-red-400"
+              >
+                <p className="font-semibold">Please complete the following before continuing:</p>
+                <ul className="mt-2 list-disc space-y-1 pl-5">
+                  {errors.map((field) => (
+                    <li key={field}>{field}</li>
+                  ))}
+                </ul>
+              </div>
+            )}
             {step === 0 && (
               <div className="space-y-4">
                 <StepTitle title="Business basics" copy="Tell us who the site is for." />
@@ -568,19 +614,23 @@ export default function OnboardingPage() {
               <div className="space-y-5">
                 <StepTitle title="Services, trust and area" copy="Choose services, proof points, and areas this business covers." />
                 <div className="grid gap-3 md:grid-cols-2">
-                  {HVAC_SERVICES.map((service) => (
-                    <label key={service.key} className="rounded-lg border border-border bg-background p-4 transition hover:border-[#c7c7c7]">
+                  {HVAC_SERVICES.map((service) => {
+                    const serviceInputId = `service-${service.key}`;
+                    return (
+                    <div key={service.key} className="rounded-lg border border-border bg-background p-4 transition hover:border-[#c7c7c7]">
                       <div className="flex items-start gap-3">
                         <input
+                          id={serviceInputId}
                           type="checkbox"
                           checked={form.services.includes(service.key)}
                           onChange={() => toggleService(service.key)}
                           className="mt-1"
                         />
-                        <span>
-                          <span className="block font-semibold">{service.label}</span>
+                        <div className="min-w-0 flex-1">
+                          <label htmlFor={serviceInputId} className="block font-semibold">{service.label}</label>
                           <span className="block text-sm leading-6 text-muted-foreground">{service.description}</span>
                           <input
+                            aria-label={`Starting price for ${service.label}`}
                             className="mt-3 h-10 w-full rounded-lg border border-border bg-card px-3 text-sm outline-none transition focus:border-foreground focus:ring-2 focus:ring-ring/20"
                             placeholder="Starting price, e.g. 650"
                             value={form.servicePrices[service.key] ?? ""}
@@ -591,10 +641,11 @@ export default function OnboardingPage() {
                               }))
                             }
                           />
-                        </span>
+                        </div>
                       </div>
-                    </label>
-                  ))}
+                    </div>
+                    );
+                  })}
                 </div>
                 <div className="grid gap-4 md:grid-cols-2">
                   <TextInput label="Primary city" value={form.primaryCity} onChange={(value) => update("primaryCity", value)} />
@@ -639,7 +690,7 @@ export default function OnboardingPage() {
 
             {step === 2 && (
               <div className="space-y-5">
-                <StepTitle title="Branding and starter style" copy="Choose the full-bleed website look, then upload the photos and logo that will carry it." />
+                <StepTitle title="Branding and starter style" copy="Choose the full-bleed website look. Photos and logo can be added now or after the first publish." />
                 <div className="grid gap-3 md:grid-cols-2">
                   {Object.entries(TEMPLATE_STYLES).map(([key, style]) => (
                     <button
@@ -664,7 +715,7 @@ export default function OnboardingPage() {
                   ))}
                 </div>
                 <div className="grid gap-3 md:grid-cols-3">
-                  <UploadField label="Logo PNG/SVG" uploadType="logo" value={form.logoUrl} clientId={clientId} onUploaded={(url) => update("logoUrl", url)} required />
+                  <UploadField label="Logo PNG/SVG" uploadType="logo" value={form.logoUrl} clientId={clientId} onUploaded={(url) => update("logoUrl", url)} />
                   <UploadField label="Hero photo" uploadType="hero" value={form.heroPhotoUrl} clientId={clientId} onUploaded={(url) => update("heroPhotoUrl", url)} />
                   <UploadField label="Owner photo" uploadType="owner" value={form.ownerPhotoUrl} clientId={clientId} onUploaded={(url) => update("ownerPhotoUrl", url)} />
                 </div>
@@ -758,11 +809,10 @@ export default function OnboardingPage() {
                     <li>Included: dashboard and analytics</li>
                     <li>Waived setup fee: R0</li>
                   </ul>
-                  <button type="button" onClick={startPayment} className="mt-6 w-full rounded-lg bg-accent px-4 py-3 font-semibold text-accent-foreground">
-                    {paymentStatus === "starting" ? "Preparing Peach..." : "Pay with Peach Payments"}
+                  <button type="button" disabled={paymentStatus === "starting" || paymentStatus === "redirecting"} onClick={startPayment} className="mt-6 w-full rounded-lg bg-accent px-4 py-3 font-semibold text-accent-foreground disabled:cursor-not-allowed disabled:opacity-60">
+                    {paymentStatus === "starting" ? "Preparing Peach..." : paymentStatus === "redirecting" ? "Redirecting..." : "Pay with Peach Payments"}
                   </button>
                   {paymentStatus === "redirecting" && <p className="mt-3 text-sm font-semibold text-muted-foreground">Redirecting to Peach Checkout...</p>}
-                  {paymentStatus === "local" && <p className="mt-3 text-sm font-semibold text-emerald-700">Local mode: payment treated as successful.</p>}
                   {paymentStatus === "error" && <p className="mt-3 text-sm font-semibold text-red-700">Could not start payment. Please retry.</p>}
                   <p className="mt-4 text-sm text-muted-foreground">30-day refund. No contracts. Local support.</p>
                 </div>
@@ -795,7 +845,7 @@ export default function OnboardingPage() {
                 </label>
                 <button
                   type="button"
-                  disabled={!form.terms || subdomainStatus === "taken"}
+                  disabled={!form.terms || subdomainStatus === "taken" || publishStatus === "publishing"}
                   onClick={publishSite}
                   className="rounded-lg bg-accent px-5 py-3 font-semibold text-accent-foreground disabled:cursor-not-allowed disabled:bg-slate-300"
                 >
@@ -816,15 +866,15 @@ export default function OnboardingPage() {
                   <ArrowLeft size={16} /> Back
                 </button>
                 {step < 5 && (
-                  <button type="button" onClick={continueStep} className="inline-flex items-center gap-2 rounded-lg bg-accent px-4 py-2 font-semibold text-accent-foreground">
-                    Continue <ArrowRight size={16} />
+                  <button type="button" disabled={saveStatus === "saving"} onClick={continueStep} className="inline-flex items-center gap-2 rounded-lg bg-accent px-4 py-2 font-semibold text-accent-foreground disabled:cursor-not-allowed disabled:opacity-60">
+                    {saveStatus === "saving" ? "Saving..." : "Continue"} <ArrowRight size={16} />
                   </button>
                 )}
               </div>
             )}
           </section>
 
-          <aside className="relative hidden overflow-hidden bg-[linear-gradient(135deg,#fbfbfc_0%,#eef2f6_100%)] p-6 lg:block">
+          <aside className="relative hidden overflow-hidden bg-[linear-gradient(135deg,#fbfbfc_0%,var(--app-bg-soft)_100%)] p-6 lg:block">
               <div className="absolute right-[-110px] top-16 h-72 w-72 rounded-full bg-blue-100/60 blur-3xl" />
               <div className="absolute bottom-16 left-[-90px] h-72 w-72 rounded-full bg-emerald-100/60 blur-3xl" />
               <div className="relative rounded-[24px] border border-white/80 bg-white/86 p-5 shadow-[0_28px_80px_rgba(15,23,42,0.12)] backdrop-blur-xl">
@@ -844,7 +894,7 @@ export default function OnboardingPage() {
                 <p className="text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground">What happens next</p>
                 <div className="mt-4 space-y-3">
                   {["AI prepares your first draft", "You preview and publish", "Leads arrive in the dashboard"].map((item, index) => (
-                    <div key={item} className="flex items-center gap-3 rounded-xl bg-[#f4f6f8] p-3 text-sm font-medium">
+                    <div key={item} className="flex items-center gap-3 rounded-xl bg-app-surface p-3 text-sm font-medium">
                       <span className="grid size-7 place-items-center rounded-full bg-white text-xs font-bold">{index + 1}</span>
                       {item}
                     </div>
@@ -859,11 +909,11 @@ export default function OnboardingPage() {
 
 function SiteRentOnboardingMark() {
   return (
-    <span className="grid size-9 shrink-0 grid-cols-2 gap-1 rounded-lg bg-[#dff8ed] p-1">
-      <span className="rounded-[4px] bg-[#1ecb7b]" />
-      <span className="rounded-[4px] bg-[#48e0a0]" />
-      <span className="rounded-[4px] bg-[#48e0a0]" />
-      <span className="rounded-[4px] bg-[#0bb665]" />
+    <span className="grid size-9 shrink-0 grid-cols-2 gap-1 rounded-lg bg-brand-mint p-1">
+      <span className="rounded-[4px] bg-brand-green-500" />
+      <span className="rounded-[4px] bg-brand-green-300" />
+      <span className="rounded-[4px] bg-brand-green-300" />
+      <span className="rounded-[4px] bg-brand-green-700" />
     </span>
   );
 }
@@ -888,7 +938,7 @@ function OnboardingMomentum({ step, percent }: { step: number; percent: number }
   ];
 
   return (
-    <div className="mb-6 grid gap-3 rounded-2xl border border-[#e6edf5] bg-[#f8fafc] p-4 md:grid-cols-[1fr_auto] md:items-center">
+    <div className="mb-6 grid gap-3 rounded-2xl border border-[#e6edf5] bg-app-surface-strong p-4 md:grid-cols-[1fr_auto] md:items-center">
       <div className="flex items-start gap-3">
         <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-white text-blue-700 shadow-sm">
           {step >= 5 ? <Rocket className="size-5" /> : <Sparkles className="size-5" />}
@@ -920,7 +970,7 @@ function TextInput({
   return (
     <label className="block text-sm font-semibold text-foreground">
       {label}
-      <div className="mt-2 flex h-12 overflow-hidden rounded-xl border border-[#d9dee5] bg-white transition duration-200 hover:border-[#b8c0cc] focus-within:border-[#111827] focus-within:ring-4 focus-within:ring-[#111827]/10">
+      <div className="mt-2 flex h-12 overflow-hidden rounded-xl border border-app-line bg-white transition duration-200 hover:border-app-border-hover focus-within:border-app-line-strong focus-within:ring-4 focus-within:ring-app-line-strong/10">
         <input className="w-full bg-transparent px-4 text-sm outline-none" value={value} onChange={(event) => onChange(event.target.value)} />
         {suffix && <span className="border-l border-border bg-secondary px-3 py-2 text-sm text-muted-foreground">{suffix}</span>}
       </div>
@@ -932,7 +982,7 @@ function TextArea({ label, value, onChange }: { label: string; value: string; on
   return (
     <label className="block text-sm font-semibold text-foreground">
       {label}
-      <textarea className="mt-2 min-h-32 w-full rounded-xl border border-[#d9dee5] bg-white px-4 py-3 text-sm outline-none transition duration-200 hover:border-[#b8c0cc] focus:border-[#111827] focus:ring-4 focus:ring-[#111827]/10" value={value} onChange={(event) => onChange(event.target.value)} />
+      <textarea className="mt-2 min-h-32 w-full rounded-xl border border-app-line bg-white px-4 py-3 text-sm outline-none transition duration-200 hover:border-app-border-hover focus:border-app-line-strong focus:ring-4 focus:ring-app-line-strong/10" value={value} onChange={(event) => onChange(event.target.value)} />
     </label>
   );
 }
@@ -947,7 +997,7 @@ function ToggleGrid({ form, update }: { form: FormState; update: <Key extends ke
   return (
     <div className="grid gap-3 sm:grid-cols-2">
       {toggles.map(([key, label]) => (
-        <label key={key} className="pressable flex items-center gap-3 rounded-xl border border-[#e5e7eb] bg-[#f8fafc] p-3 text-sm font-semibold transition hover:border-[#111827] hover:bg-white">
+        <label key={key} className="pressable flex items-center gap-3 rounded-xl border border-app-divider bg-app-surface-strong p-3 text-sm font-semibold transition hover:border-app-line-strong hover:bg-white">
           <input type="checkbox" checked={Boolean(form[key])} onChange={(event) => update(key, event.target.checked as never)} />
           {label}
         </label>
@@ -1003,7 +1053,7 @@ function UploadField({
   }
 
   return (
-    <label className="pressable flex min-h-40 cursor-pointer flex-col justify-between rounded-2xl border border-dashed border-[#cfd6df] bg-[#f8fafc] p-4 text-sm font-semibold transition hover:border-[#111827] hover:bg-white">
+    <label className="pressable flex min-h-40 cursor-pointer flex-col justify-between rounded-2xl border border-dashed border-[#cfd6df] bg-app-surface-strong p-4 text-sm font-semibold transition hover:border-app-line-strong hover:bg-white">
       <input
         type="file"
         className="sr-only"
@@ -1020,7 +1070,11 @@ function UploadField({
       </span>
       {previewUrl || value ? (
         <span className="mt-4 flex items-center gap-2 rounded-xl bg-white p-3 text-muted-foreground shadow-sm">
-          {previewUrl ? <img src={previewUrl} alt="" className="size-10 rounded object-cover" /> : <ImageIcon size={18} />}
+          {previewUrl ? (
+            <Image src={previewUrl} alt="" width={40} height={40} unoptimized className="size-10 rounded object-cover" />
+          ) : (
+            <ImageIcon size={18} />
+          )}
           {status === "uploading" ? "Uploading..." : "Uploaded"}
         </span>
       ) : (
@@ -1062,7 +1116,7 @@ function PreviewCard({ title, theme, form, compact = false }: { title: string; t
           <span className="size-4 rounded-full" style={{ backgroundColor: accent }} />
         </div>
         <div className="rounded-lg bg-secondary p-3">
-          {form.jobsCompleted || "100+"} jobs completed - {form.primaryCity || "Primary city"}
+          {form.jobsCompleted ? `${form.jobsCompleted} jobs completed` : "Jobs completed pending"} - {form.primaryCity || "Primary city"}
         </div>
         <div className="flex flex-wrap gap-2">
           {form.suburbs

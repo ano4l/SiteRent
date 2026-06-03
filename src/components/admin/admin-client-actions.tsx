@@ -54,7 +54,7 @@ function ActionButton({
       className={
         tone === "danger"
           ? "inline-flex h-8 items-center gap-1.5 rounded-full border border-[#ffd8d8] bg-[#fff5f5] px-3 text-xs font-bold text-[#b42318] transition hover:bg-[#ffecec]"
-          : "inline-flex h-8 items-center gap-1.5 rounded-full border border-[#ddd5c7] bg-[#fbf8f3] px-3 text-xs font-bold text-[#333333] transition hover:border-[#111111]"
+          : "inline-flex h-8 items-center gap-1.5 rounded-full border border-admin-line-soft bg-admin-surface px-3 text-xs font-bold text-[#333333] transition hover:border-[#111111]"
       }
     >
       <Icon size={13} />

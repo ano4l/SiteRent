@@ -50,11 +50,19 @@ export const aiWebsitePlanSchema = z.object({
 
 export type AiWebsitePlan = z.infer<typeof aiWebsitePlanSchema>;
 
+export type AiWebsiteAttachment = {
+  name: string;
+  mimeType: string;
+  data?: string;
+  text?: string;
+};
+
 type GenerateWebsitePlanInput = {
   mode: "create" | "restyle" | "copy-refresh";
   businessContext: string;
   currentWebsiteContext?: string;
   preferredTemplateStyle?: AiWebsitePlan["templateStyle"];
+  attachments?: AiWebsiteAttachment[];
 };
 
 type GeminiResponse = {
@@ -77,10 +85,34 @@ export function hasGeminiConfig() {
 export async function generateWebsitePlan(input: GenerateWebsitePlanInput): Promise<AiWebsitePlan> {
   const apiKey = process.env.GEMINI_API_KEY;
   if (!apiKey) {
-    return localWebsitePlan(input);
+    throw new Error("GEMINI_API_KEY is required in production mode.");
   }
 
   const model = process.env.GEMINI_MODEL || "gemini-2.0-flash";
+  const parts: Array<Record<string, unknown>> = [
+    {
+      text: buildWebsitePrompt(input)
+    }
+  ];
+
+  for (const attachment of input.attachments ?? []) {
+    if (attachment.text) {
+      parts.push({
+        text: `Attachment: ${attachment.name} (${attachment.mimeType})\n${attachment.text}`
+      });
+      continue;
+    }
+
+    if (attachment.data) {
+      parts.push({
+        inline_data: {
+          mime_type: attachment.mimeType,
+          data: attachment.data
+        }
+      });
+    }
+  }
+
   const response = await fetch(`${GEMINI_API_BASE}/models/${model}:generateContent?key=${apiKey}`, {
     method: "POST",
     headers: {
@@ -90,11 +122,7 @@ export async function generateWebsitePlan(input: GenerateWebsitePlanInput): Prom
       contents: [
         {
           role: "user",
-          parts: [
-            {
-              text: buildWebsitePrompt(input)
-            }
-          ]
+          parts
         }
       ],
       generationConfig: {
@@ -137,66 +165,22 @@ ${input.businessContext}
 Current website context:
 ${input.currentWebsiteContext ?? "No current website context supplied."}
 
+Uploaded reference files:
+${attachmentSummary(input.attachments)}
+
 Return only valid JSON with:
 summary, templateStyle, brand, hero, sections, serviceCopy, imagePrompts, uiChangePlan, implementationNotes.
 Keep recommendations practical for a Next.js/Tailwind implementation and POPIA-aware South African small business websites.
 `;
 }
 
-function localWebsitePlan(input: GenerateWebsitePlanInput): AiWebsitePlan {
-  const templateStyle = input.preferredTemplateStyle ?? "aireco-dark";
-  return {
-    summary: "Local AI fallback plan. Configure GEMINI_API_KEY to generate tailored website plans.",
-    templateStyle,
-    brand: {
-      tone: "Trustworthy, fast, and local",
-      primaryColour: "#ff5b18",
-      accentColour: "#111111",
-      typographyDirection: "Bold modern sans-serif with compact operational UI copy"
-    },
-    hero: {
-      headline: "Reliable HVAC service built for local homes and businesses",
-      subheadline: "Fast repairs, clear pricing, and professional installation support.",
-      primaryCta: "Schedule your service",
-      secondaryCta: "View services"
-    },
-    sections: [
-      {
-        key: "services",
-        title: "HVAC services",
-        purpose: "Show the core services clearly.",
-        contentNotes: "Use service cards with pricing and emergency emphasis."
-      },
-      {
-        key: "trust",
-        title: "Why choose us",
-        purpose: "Build confidence before contact.",
-        contentNotes: "Highlight guarantees, insurance, certifications, and response time."
-      },
-      {
-        key: "contact",
-        title: "Get a free quote",
-        purpose: "Capture leads.",
-        contentNotes: "Keep the enquiry form short and include WhatsApp."
-      }
-    ],
-    serviceCopy: [],
-    imagePrompts: [
-      {
-        slot: "hero",
-        prompt: "Professional HVAC technician repairing an outdoor air conditioning unit at a South African home, bright natural light, premium commercial photography."
-      }
-    ],
-    uiChangePlan: [
-      {
-        area: "Hero",
-        change: "Use the selected template language with a strong CTA and trust metric.",
-        rationale: "Improves first-screen conversion."
-      }
-    ],
-    implementationNotes: [
-      "Server-side Gemini fallback is active because GEMINI_API_KEY is not configured.",
-      "Use the generated templateStyle to map into the published-site renderer."
-    ]
-  };
+function attachmentSummary(attachments?: AiWebsiteAttachment[]) {
+  if (!attachments?.length) return "No files uploaded.";
+
+  return attachments
+    .map((attachment, index) => {
+      const readable = attachment.text ? "text extracted" : attachment.data ? "sent as inline media" : "metadata only";
+      return `${index + 1}. ${attachment.name} (${attachment.mimeType}) - ${readable}`;
+    })
+    .join("\n");
 }

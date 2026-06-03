@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { getAuthenticatedUserId } from "@/lib/client-auth";
-import { hasSupabaseBrowserConfig } from "@/lib/env";
+import { getMissingSupabaseServiceConfig, hasSupabaseBrowserConfig, productionConfigError } from "@/lib/env";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 
 const updateSchema = z.object({
@@ -32,7 +32,10 @@ export async function PATCH(request: Request) {
 
   const supabase = createSupabaseAdminClient();
   if (!supabase) {
-    return NextResponse.json({ ok: true, mode: "local", savedAt: new Date().toISOString() });
+    return NextResponse.json(
+      productionConfigError("Supabase is required before dashboard updates can be saved in production.", getMissingSupabaseServiceConfig()),
+      { status: 503 }
+    );
   }
 
   const data = payload.data;

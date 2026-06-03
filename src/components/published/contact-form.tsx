@@ -16,7 +16,8 @@ export function ContactForm({ clientId, brandColour }: { clientId: string; brand
         phone: formData.get("phone"),
         service: formData.get("service"),
         suburb: formData.get("suburb"),
-        message: formData.get("message")
+        message: formData.get("message"),
+        company: formData.get("company")
       })
     });
     setStatus(response.ok ? "sent" : "error");
@@ -35,9 +36,24 @@ export function ContactForm({ clientId, brandColour }: { clientId: string; brand
         Message
         <textarea name="message" className="mt-2 min-h-24 w-full rounded-md border border-line px-3 py-2" />
       </label>
-      <button className="mt-5 rounded-md px-5 py-3 font-semibold text-white" style={{ backgroundColor: brandColour }}>
+      {/* Honeypot: hidden from users, bots tend to fill it. Real submissions leave it empty. */}
+      <div aria-hidden="true" className="absolute left-[-9999px] h-0 w-0 overflow-hidden">
+        <label>
+          Company
+          <input type="text" name="company" tabIndex={-1} autoComplete="off" />
+        </label>
+      </div>
+      <button
+        disabled={status === "sending"}
+        className="mt-5 rounded-md px-5 py-3 font-semibold text-white disabled:cursor-not-allowed disabled:opacity-60"
+        style={{ backgroundColor: brandColour }}
+      >
         {status === "sending" ? "Sending" : status === "sent" ? "Sent" : "Send enquiry"}
       </button>
+      <p aria-live="polite" className="sr-only">
+        {status === "sent" ? "Enquiry sent." : status === "sending" ? "Sending enquiry." : ""}
+      </p>
+      {status === "sent" && <p className="mt-3 text-sm font-semibold text-emerald-600">Thanks — we&rsquo;ll be in touch shortly.</p>}
       {status === "error" && <p className="mt-3 text-sm font-semibold text-red-600">Could not send enquiry.</p>}
     </form>
   );

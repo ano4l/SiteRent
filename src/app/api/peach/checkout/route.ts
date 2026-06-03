@@ -8,10 +8,12 @@ import {
   getPeachCheckoutUrl,
   hasPeachCheckoutConfig
 } from "@/lib/peach";
+import { getMissingSupabaseServiceConfig, hasSupabaseBrowserConfig, productionConfigError } from "@/lib/env";
+import { getAuthenticatedUserId } from "@/lib/client-auth";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 
 const checkoutSchema = z.object({
-  clientId: z.string().uuid().optional(),
+  clientId: z.string().uuid(),
   businessName: z.string().min(1),
   email: z.string().email().optional().or(z.literal("")),
   phone: z.string().optional(),
@@ -26,11 +28,13 @@ export async function POST(request: Request) {
   }
 
   if (!hasPeachCheckoutConfig()) {
-    return NextResponse.json({
-      ok: true,
-      mode: "local",
-      message: "Peach Payments credentials are not configured. Local payment is treated as successful."
-    });
+    return NextResponse.json(
+      {
+        error: "Peach Payments credentials are required before checkout can start in production.",
+        missing: ["PEACH_ENTITY_ID", "PEACH_SECRET_TOKEN"]
+      },
+      { status: 503 }
+    );
   }
 
   const origin = process.env.NEXT_PUBLIC_SITE_URL ?? new URL(request.url).origin;
@@ -40,6 +44,37 @@ export async function POST(request: Request) {
     clientId: payload.data.clientId,
     product: "siterent-monthly"
   });
+
+  const supabase = createSupabaseAdminClient();
+  if (!supabase) {
+    return NextResponse.json(
+      productionConfigError(
+        "Supabase service role is required before checkout can start in production.",
+        getMissingSupabaseServiceConfig()
+      ),
+      { status: 503 }
+    );
+  }
+
+  const userId = hasSupabaseBrowserConfig() ? await getAuthenticatedUserId() : null;
+  if (hasSupabaseBrowserConfig() && !userId) {
+    return NextResponse.json({ error: "Authentication required" }, { status: 401 });
+  }
+
+  const clientQuery = supabase
+    .from("clients")
+    .select("id,business_name,email,phone")
+    .eq("id", payload.data.clientId);
+
+  if (userId) {
+    clientQuery.eq("user_id", userId);
+  }
+
+  const { data: client } = await clientQuery.maybeSingle();
+
+  if (!client) {
+    return NextResponse.json({ error: "Client not found" }, { status: 404 });
+  }
 
   const draftFields: Record<string, string | number | undefined> = {
     "authentication.entityId": process.env.PEACH_ENTITY_ID,
@@ -52,10 +87,10 @@ export async function POST(request: Request) {
     shopperResultUrl: `${origin}/api/peach/result`,
     cancelUrl: `${origin}/peach/cancel`,
     notificationUrl: `${origin}/api/peach/webhook`,
-    "customer.merchantCustomerId": payload.data.clientId,
-    "customer.email": payload.data.email || undefined,
-    "customer.phone": payload.data.phone || undefined,
-    "customer.givenName": payload.data.businessName.slice(0, 48),
+    "customer.merchantCustomerId": client.id,
+    "customer.email": client.email || payload.data.email || undefined,
+    "customer.phone": client.phone || payload.data.phone || undefined,
+    "customer.givenName": (client.business_name ?? payload.data.businessName).slice(0, 48),
     "customer.surname": "Customer",
     createRegistration: "true",
     "standingInstruction.type": "RECURRING",
@@ -71,21 +106,18 @@ export async function POST(request: Request) {
   const signature = buildPeachSignature(fields, process.env.PEACH_SECRET_TOKEN);
   const signedFields = { ...fields, signature };
 
-  const supabase = createSupabaseAdminClient();
-  if (supabase) {
-    await supabase.from("billing_events").insert({
-      client_id: payload.data.clientId,
-      provider: "peach",
-      event_type: "checkout_created",
-      provider_payment_id: merchantTransactionId,
-      amount: payload.data.amount,
-      status: "pending",
-      payload: {
-        merchant_transaction_id: merchantTransactionId,
-        sandbox: process.env.PEACH_SANDBOX !== "false"
-      }
-    });
-  }
+  await supabase.from("billing_events").insert({
+    client_id: payload.data.clientId,
+    provider: "peach",
+    event_type: "checkout_created",
+    provider_payment_id: merchantTransactionId,
+    amount: payload.data.amount,
+    status: "pending",
+    payload: {
+      merchant_transaction_id: merchantTransactionId,
+      sandbox: process.env.PEACH_SANDBOX !== "false"
+    }
+  });
 
   return NextResponse.json({
     ok: true,

@@ -1,5 +1,4 @@
 import { hasSupabaseBrowserConfig } from "@/lib/env";
-import { sampleClientSite } from "@/lib/sample-data";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
@@ -30,45 +29,45 @@ export type DashboardClient = {
 
 export type DashboardData = {
   client: DashboardClient;
-  mode: "supabase" | "local";
+  mode: "supabase" | "configuration-required";
   isAuthenticated: boolean;
   hasWebsite: boolean;
 };
 
-export async function getDashboardData(): Promise<DashboardData> {
-  const localClient = {
-    id: sampleClientSite.id,
-    business_name: sampleClientSite.businessName,
-    trading_name: sampleClientSite.tradingName,
-    tagline: sampleClientSite.tagline,
-    phone: sampleClientSite.phone,
-    whatsapp: sampleClientSite.whatsapp,
-    email: sampleClientSite.email,
-    primary_city: sampleClientSite.primaryCity,
-    address: sampleClientSite.address ?? null,
-    subdomain: sampleClientSite.subdomain ?? null,
-    custom_domain: null,
-    site_published: true,
-    published_at: new Date().toISOString(),
-    subscription_status: "active",
-    next_billing_date: null,
-    payment_failed_at: null,
-    subscription_ends_at: null,
-    gallery_photos: sampleClientSite.galleryPhotos,
-    ga_measurement_id: null,
-    pixel_id: sampleClientSite.pixelId ?? null,
-    google_place_id: null,
-    template_style: sampleClientSite.templateStyle ?? "aireco-dark"
-  };
+const emptyClient: DashboardClient = {
+  id: "new",
+  business_name: null,
+  trading_name: null,
+  tagline: null,
+  phone: null,
+  whatsapp: null,
+  email: null,
+  primary_city: null,
+  address: null,
+  subdomain: null,
+  custom_domain: null,
+  site_published: false,
+  published_at: null,
+  subscription_status: "not_started",
+  next_billing_date: null,
+  payment_failed_at: null,
+  subscription_ends_at: null,
+  gallery_photos: [],
+  ga_measurement_id: null,
+  pixel_id: null,
+  google_place_id: null,
+  template_style: null
+};
 
+export async function getDashboardData(): Promise<DashboardData> {
   const admin = createSupabaseAdminClient();
   if (!admin || !hasSupabaseBrowserConfig()) {
-    return { client: localClient, mode: "local", isAuthenticated: false, hasWebsite: true };
+    return { client: emptyClient, mode: "configuration-required", isAuthenticated: false, hasWebsite: false };
   }
 
   const user = (await createSupabaseServerClient().auth.getUser()).data.user;
   if (!user) {
-    return { client: localClient, mode: "local", isAuthenticated: false, hasWebsite: true };
+    return { client: emptyClient, mode: "supabase", isAuthenticated: false, hasWebsite: false };
   }
 
   const { data } = await admin
@@ -82,26 +81,8 @@ export async function getDashboardData(): Promise<DashboardData> {
     .maybeSingle();
 
   return {
-    client: (data as DashboardClient | null) ?? {
-      ...localClient,
-      id: "new",
-      business_name: null,
-      trading_name: null,
-      tagline: null,
-      phone: null,
-      whatsapp: null,
-      email: null,
-      primary_city: null,
-      address: null,
-      subdomain: null,
-      site_published: false,
-      published_at: null,
-      subscription_status: "not_started",
-      gallery_photos: [],
-      pixel_id: null,
-      template_style: null
-    },
-    mode: data ? "supabase" : "local",
+    client: (data as DashboardClient | null) ?? emptyClient,
+    mode: "supabase",
     isAuthenticated: true,
     hasWebsite: Boolean(data)
   };

@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { getSubscriptionPeriodEnd } from "@/lib/billing";
 import { getAuthenticatedUserId } from "@/lib/client-auth";
-import { hasSupabaseBrowserConfig } from "@/lib/env";
+import { getMissingSupabaseServiceConfig, hasSupabaseBrowserConfig, productionConfigError } from "@/lib/env";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 
 const cancelSchema = z.object({
@@ -21,11 +21,13 @@ export async function POST(request: Request) {
   const supabase = createSupabaseAdminClient();
 
   if (!supabase) {
-    return NextResponse.json({
-      ok: true,
-      mode: "local",
-      subscriptionEndsAt: periodEnd.toISOString()
-    });
+    return NextResponse.json(
+      productionConfigError(
+        "Supabase service role is required before subscriptions can be cancelled in production.",
+        getMissingSupabaseServiceConfig()
+      ),
+      { status: 503 }
+    );
   }
 
   if (hasSupabaseBrowserConfig()) {

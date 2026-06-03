@@ -3,7 +3,6 @@ import Script from "next/script";
 import { HvacSite } from "@/components/published/hvac-site";
 import { mapClientRowToSite } from "@/lib/client-site-mapper";
 import { getSiteUrl } from "@/lib/domains";
-import { sampleClientSite } from "@/lib/sample-data";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import type { ClientSite } from "@/lib/types";
 
@@ -20,7 +19,7 @@ async function getSite(subdomain: string) {
   const supabase = createSupabaseAdminClient();
 
   if (!supabase) {
-    return sampleClientSite;
+    return null;
   }
 
   const { data } = await supabase
@@ -55,11 +54,22 @@ async function getSiteStatus(subdomain: string) {
 }
 
 export async function generateMetadata({ params }: PublishedSitePageProps): Promise<Metadata> {
-  const site = (await getSite(params.subdomain)) ?? sampleClientSite;
+  const site = await getSite(params.subdomain);
+  if (!site) {
+    return {
+      title: {
+        absolute: "Site not found"
+      },
+      description: "This SiteRent website is not published."
+    };
+  }
+
   const url = getCanonicalUrl(site, params.subdomain);
 
   return {
-    title: `${site.businessName} - HVAC & Plumbing in ${site.primaryCity}`,
+    title: {
+      absolute: `${site.businessName} - HVAC & Plumbing in ${site.primaryCity}`
+    },
     description: site.tagline,
     alternates: {
       canonical: url

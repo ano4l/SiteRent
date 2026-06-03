@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { getAuthenticatedUserId } from "@/lib/client-auth";
-import { hasSupabaseBrowserConfig } from "@/lib/env";
+import { getMissingSupabaseServiceConfig, hasSupabaseBrowserConfig, productionConfigError } from "@/lib/env";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 
 const republishSchema = z.object({
@@ -18,11 +18,10 @@ export async function POST(request: Request) {
   const supabase = createSupabaseAdminClient();
 
   if (!supabase) {
-    return NextResponse.json({
-      ok: true,
-      mode: "local",
-      republishedAt: new Date().toISOString()
-    });
+    return NextResponse.json(
+      productionConfigError("Supabase is required before a site can be republished in production.", getMissingSupabaseServiceConfig()),
+      { status: 503 }
+    );
   }
 
   if (hasSupabaseBrowserConfig()) {

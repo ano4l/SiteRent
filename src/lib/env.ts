@@ -1,11 +1,36 @@
+export function getSupabasePublishableKey() {
+  return process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY ?? process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+}
+
 export function hasSupabaseBrowserConfig() {
-  return Boolean(process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY);
+  return Boolean(process.env.NEXT_PUBLIC_SUPABASE_URL && getSupabasePublishableKey());
+}
+
+export function getMissingSupabaseBrowserConfig() {
+  const missing = [];
+  if (!process.env.NEXT_PUBLIC_SUPABASE_URL) missing.push("NEXT_PUBLIC_SUPABASE_URL");
+  if (!getSupabasePublishableKey()) missing.push("NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY or NEXT_PUBLIC_SUPABASE_ANON_KEY");
+  return missing;
 }
 
 export function hasSupabaseServiceConfig() {
   return Boolean(
     process.env.NEXT_PUBLIC_SUPABASE_URL &&
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY &&
+      getSupabasePublishableKey() &&
       process.env.SUPABASE_SERVICE_ROLE_KEY
   );
+}
+
+export function getMissingSupabaseServiceConfig() {
+  return [
+    ...getMissingSupabaseBrowserConfig(),
+    ...(!process.env.SUPABASE_SERVICE_ROLE_KEY ? ["SUPABASE_SERVICE_ROLE_KEY"] : [])
+  ];
+}
+
+export function productionConfigError(message: string, missing: string[] = []) {
+  return {
+    error: message,
+    missing
+  };
 }
