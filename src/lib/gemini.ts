@@ -149,13 +149,15 @@ export async function generateWebsitePlan(input: GenerateWebsitePlanInput): Prom
 
 function buildWebsitePrompt(input: GenerateWebsitePlanInput) {
   return `
-You are the SiteRent website creation assistant for South African HVAC website rentals.
+You are the SiteRent website creation assistant for South African service-business website rentals.
 
 Create a structured website creation or UI restyle plan that fits one of these four starter template styles:
-- aireco-dark: black/dark hero, orange booking CTAs, large HVAC photography, premium service feel.
+- aireco-dark: black/dark hero, bold booking CTAs, large service photography, premium local-business feel.
 - eircool-editorial: airy cream canvas, olive accents, staggered image blocks, calm editorial trust.
 - razor-minimal: ivory full-page layout, pill navigation, oversized type, compact service cards.
 - coolair-blue: blue corporate hero, trust signals, process cards, polished maintenance company feel.
+
+Supported customer categories include plumbers, geyser repair, electricians, locksmiths, pest control, roofing, HVAC, solar, barbers, and photographers. Infer the correct category from the business context and avoid HVAC-specific wording unless the customer is actually HVAC.
 
 Mode: ${input.mode}
 Preferred template style: ${input.preferredTemplateStyle ?? "choose the best fit"}

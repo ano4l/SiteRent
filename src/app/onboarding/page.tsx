@@ -1,12 +1,14 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
-import Image from "next/image";
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { ArrowLeft, ArrowRight, Check, CheckCircle2, Clock, Globe2, ImageIcon, LockKeyhole, MonitorCheck, Rocket, Sparkles, Upload } from "lucide-react";
-import { BRAND_COLOURS, HVAC_SERVICES, ONBOARDING_STEPS, RESPONSE_TIMES, TEMPLATE_STYLES, WEEK_DAYS } from "@/lib/constants";
+import { BRAND_COLOURS, INDUSTRY_TEMPLATES, ONBOARDING_STEPS, RESPONSE_TIMES, SERVICE_CATALOG, TEMPLATE_STYLES, WEEK_DAYS } from "@/lib/constants";
+import { TEST_CLIENT_ID } from "@/lib/test-data";
 import type { TemplateStyle } from "@/lib/types";
 import { cn, slugifySubdomain } from "@/lib/utils";
+
+type IndustryTemplate = keyof typeof INDUSTRY_TEMPLATES;
 
 type TestimonialInput = {
   name: string;
@@ -24,6 +26,7 @@ type HoursInput = Record<
 >;
 
 type FormState = {
+  businessType: IndustryTemplate;
   tradingName: string;
   tagline: string;
   ownerName: string;
@@ -51,6 +54,7 @@ type FormState = {
   facebookUrl: string;
   instagramUrl: string;
   pixelId: string;
+  visualDirection: string;
   templateStyle: TemplateStyle;
   brandColour: keyof typeof BRAND_COLOURS;
   logoUrl: string;
@@ -69,6 +73,7 @@ type AiBuilderDraft = {
   phone?: string;
   email?: string;
   servicesAndProof?: string;
+  visualDirection?: string;
   plan?: {
     summary?: string;
     templateStyle?: string;
@@ -78,6 +83,12 @@ type AiBuilderDraft = {
     };
     serviceCopy?: Array<{
       serviceKey?: string;
+      headline?: string;
+      description?: string;
+    }>;
+    uiChangePlan?: Array<{
+      area?: string;
+      change?: string;
     }>;
   };
 };
@@ -93,6 +104,7 @@ const defaultHours: HoursInput = Object.fromEntries(
 );
 
 const initialState: FormState = {
+  businessType: "hvac",
   tradingName: "",
   tagline: "",
   ownerName: "",
@@ -103,7 +115,7 @@ const initialState: FormState = {
   servicePrices: {},
   customServices: [],
   certifications: "",
-  isInsured: false,
+  isInsured: true,
   hasGuarantee: false,
   guaranteePeriod: "12 months",
   hasEmergency: false,
@@ -120,6 +132,7 @@ const initialState: FormState = {
   facebookUrl: "",
   instagramUrl: "",
   pixelId: "",
+  visualDirection: "",
   templateStyle: "aireco-dark",
   brandColour: "navy",
   logoUrl: "",
@@ -130,48 +143,134 @@ const initialState: FormState = {
   terms: false
 };
 
+const demoState: FormState = {
+  ...initialState,
+  businessType: "electrician",
+  tradingName: "BrightSpark Electricians",
+  tagline: "Safe electrical repairs, installations, and compliance support across Cape Town.",
+  ownerName: "Sam Rivera",
+  yearFounded: "2018",
+  jobsCompleted: "640+",
+  aboutText: "BrightSpark Electricians helps homeowners, landlords, and small businesses with dependable electrical fault finding, upgrades, lighting, and compliance-ready work.",
+  services: ["fault-finding", "db-board-upgrades", "lighting-installation", "electrical-compliance"],
+  servicePrices: {
+    "fault-finding": "550",
+    "db-board-upgrades": "1800",
+    "lighting-installation": "450",
+    "electrical-compliance": "1200"
+  },
+  certifications: "Qualified electrician, insured workmanship",
+  hasGuarantee: true,
+  guaranteePeriod: "12 months",
+  hasEmergency: true,
+  primaryCity: "Cape Town",
+  address: "12 Bree Street, Cape Town",
+  suburbs: "Sea Point, Claremont, Gardens, Durbanville, Bellville",
+  testimonials: [
+    { name: "Nadia K.", suburb: "Claremont", quote: "They arrived the same day and had our office power stable before lunch." },
+    { name: "Thabo M.", suburb: "Sea Point", quote: "Clear pricing, neat work, and a friendly team." },
+    { name: "Ruan P.", suburb: "Durbanville", quote: "The maintenance plan has saved us from two breakdowns already." }
+  ],
+  phone: "+27 21 555 0198",
+  whatsapp: "+27 82 555 0198",
+  email: "hello@brightspark.example",
+  facebookUrl: "https://facebook.com/brightsparkelectricians",
+  instagramUrl: "https://instagram.com/brightsparkelectricians",
+  pixelId: "1234567890",
+  visualDirection: "Modern, trustworthy, mobile-first, with safety proof above the contact form and a direct call CTA.",
+  templateStyle: "razor-minimal",
+  brandColour: "amber",
+  logoUrl: "/window.svg",
+  heroPhotoUrl: "/globe.svg",
+  ownerPhotoUrl: "/file.svg",
+  subdomain: "brightspark-electricians",
+  customDomain: "brightsparkelectricians.co.za",
+  terms: true
+};
+
 const localStorageKey = "siterent-onboarding-v2";
+const legacyLocalStorageKeys = ["siterent-onboarding-v1"];
 const publishResultStorageKey = "siterent-last-publish-result";
 const aiBuilderDraftStorageKey = "siterent-ai-builder-draft-v2";
 
-function servicesFromAiDraft(draft: AiBuilderDraft) {
+function isIndustryTemplate(value: unknown): value is IndustryTemplate {
+  return typeof value === "string" && value in INDUSTRY_TEMPLATES;
+}
+
+function coerceFormState(value?: Partial<FormState>) {
+  const form = { ...initialState, ...value };
+  if (!isIndustryTemplate(form.businessType)) form.businessType = "hvac";
+  if (!(form.templateStyle in TEMPLATE_STYLES)) form.templateStyle = "aireco-dark";
+  return form;
+}
+
+function inferIndustryTemplate(draft: AiBuilderDraft): IndustryTemplate {
+  const text = [
+    draft.businessName,
+    draft.servicesAndProof,
+    draft.visualDirection,
+    draft.plan?.summary,
+    draft.plan?.hero?.headline,
+    draft.plan?.hero?.subheadline,
+    ...(draft.plan?.serviceCopy?.map((item) => `${item.serviceKey ?? ""} ${item.headline ?? ""} ${item.description ?? ""}`) ?? [])
+  ].join(" ").toLowerCase();
+
+  for (const [key, template] of Object.entries(INDUSTRY_TEMPLATES) as Array<[IndustryTemplate, (typeof INDUSTRY_TEMPLATES)[IndustryTemplate]]>) {
+    const haystack = [key, template.label, template.singular, ...template.serviceKeys].join(" ").toLowerCase();
+    if (haystack.split(/\s+/).some((word) => word.length > 4 && text.includes(word))) return key;
+  }
+
+  return "hvac";
+}
+
+function servicesFromAiDraft(draft: AiBuilderDraft, industry: IndustryTemplate) {
   const text = [
     draft.servicesAndProof,
     draft.plan?.summary,
     draft.plan?.hero?.headline,
-    ...(draft.plan?.serviceCopy?.map((item) => item.serviceKey ?? "") ?? [])
+    ...(draft.plan?.serviceCopy?.map((item) => `${item.serviceKey ?? ""} ${item.headline ?? ""} ${item.description ?? ""}`) ?? [])
   ].join(" ").toLowerCase();
 
-  const selected = HVAC_SERVICES
+  const selected = SERVICE_CATALOG
     .filter((service) => {
       const labelWords = service.label.toLowerCase().split(/\s+/);
       return text.includes(service.key) || labelWords.some((word) => word.length > 4 && text.includes(word));
     })
     .map((service) => service.key);
 
-  return selected.length ? selected : HVAC_SERVICES.slice(0, 3).map((service) => service.key);
+  return selected.length ? selected : [...INDUSTRY_TEMPLATES[industry].serviceKeys];
 }
 
 function formFromAiDraft(draft: AiBuilderDraft, current: FormState): FormState {
+  const businessType = inferIndustryTemplate(draft);
+  const template = INDUSTRY_TEMPLATES[businessType];
   const businessName = draft.businessName?.trim() || current.tradingName;
   const templateStyle =
     draft.plan?.templateStyle && draft.plan.templateStyle in TEMPLATE_STYLES
       ? (draft.plan.templateStyle as TemplateStyle)
-      : current.templateStyle;
+      : template.defaultTemplateStyle;
+  const aiVisualDirection = [
+    draft.visualDirection,
+    ...(draft.plan?.uiChangePlan?.map((item) => [item.area, item.change].filter(Boolean).join(": ")) ?? [])
+  ].filter(Boolean).join("\n");
 
   return {
     ...current,
+    businessType,
     tradingName: businessName,
-    tagline: draft.plan?.hero?.subheadline?.trim() || current.tagline,
+    tagline: draft.plan?.hero?.subheadline?.trim() || template.defaultTagline,
     ownerName: draft.contactName?.trim() || current.ownerName,
-    aboutText: draft.plan?.summary?.trim() || draft.servicesAndProof?.trim() || current.aboutText,
-    services: servicesFromAiDraft(draft),
+    aboutText: draft.plan?.summary?.trim() || draft.servicesAndProof?.trim() || template.defaultAbout,
+    services: servicesFromAiDraft(draft, businessType),
+    certifications: current.certifications || template.defaultCertifications,
     primaryCity: draft.primaryCity?.trim() || current.primaryCity,
     suburbs: draft.serviceArea?.trim() || current.suburbs,
     phone: draft.phone?.trim() || current.phone,
     whatsapp: draft.phone?.trim() || current.whatsapp,
     email: draft.email?.trim() || current.email,
+    visualDirection: aiVisualDirection || current.visualDirection,
     templateStyle,
+    brandColour: template.defaultBrandColour,
     subdomain: businessName ? slugifySubdomain(businessName) : current.subdomain
   };
 }
@@ -182,20 +281,17 @@ export default function OnboardingPage() {
   const [clientId, setClientId] = useState<string | null>(null);
   const [errors, setErrors] = useState<string[]>([]);
   const [saveStatus, setSaveStatus] = useState<"idle" | "saving" | "saved" | "error" | "published">("idle");
-  const [paymentStatus, setPaymentStatus] = useState<"idle" | "starting" | "redirecting" | "error">("idle");
+  const [paymentStatus, setPaymentStatus] = useState<"idle" | "starting" | "redirecting" | "local" | "error">("idle");
   const [publishStatus, setPublishStatus] = useState<"idle" | "publishing" | "error">("idle");
   const [subdomainStatus, setSubdomainStatus] = useState<"idle" | "checking" | "available" | "taken" | "invalid">("idle");
-  const errorSummaryRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    if (errors.length > 0) {
-      errorSummaryRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
-      errorSummaryRef.current?.focus();
-    }
-  }, [errors]);
 
   const percent = Math.round(((step + 1) / ONBOARDING_STEPS.length) * 100);
   const theme = BRAND_COLOURS[form.brandColour];
+  const industryTemplate = INDUSTRY_TEMPLATES[form.businessType];
+  const recommendedServices = useMemo(() => {
+    const keys = new Set([...industryTemplate.serviceKeys, ...form.services]);
+    return SERVICE_CATALOG.filter((service) => keys.has(service.key));
+  }, [form.services, industryTemplate.serviceKeys]);
   const activationTasks = [
     { label: "Business identity", done: Boolean(form.tradingName && form.ownerName) },
     { label: "Service area", done: Boolean(form.services.length && form.primaryCity) },
@@ -205,19 +301,19 @@ export default function OnboardingPage() {
 
   const previewTitle = useMemo(() => {
     const city = form.primaryCity || "your city";
-    return `${form.tradingName || "Your HVAC Business"} in ${city}`;
+    return `${form.tradingName || "Your Service Business"} in ${city}`;
   }, [form.primaryCity, form.tradingName]);
 
   useEffect(() => {
-    const saved = window.localStorage.getItem(localStorageKey);
+    const saved = window.localStorage.getItem(localStorageKey) ?? legacyLocalStorageKeys
+      .map((key) => window.localStorage.getItem(key))
+      .find(Boolean);
     if (!saved) return;
 
     try {
       const payload = JSON.parse(saved) as { form?: FormState; step?: number; clientId?: string };
       if (payload.form) {
-        const savedForm = { ...initialState, ...payload.form };
-        if (!(savedForm.templateStyle in TEMPLATE_STYLES)) savedForm.templateStyle = "aireco-dark";
-        setForm(savedForm);
+        setForm(coerceFormState(payload.form));
       }
       if (typeof payload.step === "number") setStep(Math.min(Math.max(payload.step, 0), 5));
       if (payload.clientId) setClientId(payload.clientId);
@@ -229,6 +325,7 @@ export default function OnboardingPage() {
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
+    const demoMode = params.get("demo") === "1";
     const fromBuilder = params.get("fromBuilder") === "1";
     const requestedTemplate = params.get("template");
     const requestedStep = Number(params.get("step"));
@@ -248,6 +345,13 @@ export default function OnboardingPage() {
           window.localStorage.removeItem(aiBuilderDraftStorageKey);
         }
       }
+    }
+
+    if (demoMode) {
+      setForm(demoState);
+      setSaveStatus("saved");
+      window.localStorage.setItem(localStorageKey, JSON.stringify({ form: demoState, step: 0, clientId: TEST_CLIENT_ID }));
+      setClientId(TEST_CLIENT_ID);
     }
     if (requestedTemplate && requestedTemplate in TEMPLATE_STYLES) {
       update("templateStyle", requestedTemplate as TemplateStyle);
@@ -300,9 +404,24 @@ export default function OnboardingPage() {
     }));
   }
 
+  function applyIndustryTemplate(key: IndustryTemplate) {
+    const template = INDUSTRY_TEMPLATES[key];
+    setForm((current) => ({
+      ...current,
+      businessType: key,
+      tagline: current.tagline || template.defaultTagline,
+      aboutText: current.aboutText || template.defaultAbout,
+      services: [...template.serviceKeys],
+      certifications: current.certifications || template.defaultCertifications,
+      templateStyle: template.defaultTemplateStyle,
+      brandColour: template.defaultBrandColour,
+      servicePrices: Object.fromEntries(template.serviceKeys.map((serviceKey) => [serviceKey, current.servicePrices[serviceKey] ?? ""]))
+    }));
+  }
+
   function addCustomService(label: string, price?: string) {
     const key = slugifySubdomain(label).replace(/[^a-z0-9\-]/g, "");
-    const exists = form.customServices.some((s) => s.key === key) || HVAC_SERVICES.some((s) => s.key === key);
+    const exists = form.customServices.some((s) => s.key === key) || SERVICE_CATALOG.some((s) => s.key === key);
     const uniqueKey = exists ? `${key}-${Date.now().toString().slice(-4)}` : key;
     setForm((current) => ({
       ...current,
@@ -319,18 +438,6 @@ export default function OnboardingPage() {
       services: current.services.filter((s) => s !== key),
       servicePrices: Object.fromEntries(Object.entries(current.servicePrices).filter(([k]) => k !== key))
     }));
-  }
-
-  function AddCustomService({ onAdd }: { onAdd: (label: string, price?: string) => void }) {
-    const [label, setLabel] = useState("");
-    const [price, setPrice] = useState("");
-    return (
-      <div className="flex w-full items-center gap-2">
-        <input className="flex-1 h-10 rounded-lg border border-border bg-card px-3 text-sm" placeholder="Add a custom service (e.g. Duct cleaning)" value={label} onChange={(e) => setLabel(e.target.value)} />
-        <input className="w-28 h-10 rounded-lg border border-border bg-card px-3 text-sm" placeholder="Price" value={price} onChange={(e) => setPrice(e.target.value)} />
-        <button type="button" onClick={() => { if (label.trim()) { onAdd(label.trim(), price.trim()); setLabel(""); setPrice(""); } }} className="rounded-lg bg-foreground px-3 py-2 text-sm font-semibold text-white">Add</button>
-      </div>
-    );
   }
 
   function updateTestimonial(index: number, field: keyof TestimonialInput, value: string) {
@@ -355,7 +462,6 @@ export default function OnboardingPage() {
     const missing: string[] = [];
     if (step === 0) {
       if (!form.tradingName) missing.push("Trading name");
-      if (!form.ownerName) missing.push("Owner name");
       if (!form.aboutText) missing.push("About paragraph");
     }
     if (step === 1) {
@@ -387,7 +493,7 @@ export default function OnboardingPage() {
         "Content-Type": "application/json"
       },
       body: JSON.stringify({
-        clientId: clientId ?? undefined,
+        clientId: clientId && clientId !== "local-client" ? clientId : undefined,
         currentStep: nextStep,
         data
       })
@@ -431,18 +537,13 @@ export default function OnboardingPage() {
     if (!saved) return;
 
     setPaymentStatus("starting");
-    if (!clientId) {
-      setPaymentStatus("error");
-      return;
-    }
-
     const response = await fetch("/api/peach/checkout", {
       method: "POST",
       headers: {
         "Content-Type": "application/json"
       },
       body: JSON.stringify({
-        clientId,
+        clientId: clientId && clientId !== "local-client" ? clientId : undefined,
         businessName: form.tradingName || "SiteRent Client",
         email: form.email,
         phone: form.phone,
@@ -456,7 +557,14 @@ export default function OnboardingPage() {
     }
 
     const payload = (await response.json()) as
+      | { mode: "local"; message?: string }
       | { mode: "sandbox" | "live"; url: string; fields: Record<string, string | number | undefined> };
+
+    if (payload.mode === "local") {
+      setPaymentStatus("local");
+      setStep(5);
+      return;
+    }
 
     setPaymentStatus("redirecting");
     const paymentForm = document.createElement("form");
@@ -480,21 +588,16 @@ export default function OnboardingPage() {
     if (!validateCurrentStep()) return;
 
     setPublishStatus("publishing");
-    if (!clientId) {
-      setPublishStatus("error");
-      setSaveStatus("error");
-      return;
-    }
-
     const response = await fetch("/api/publish", {
       method: "POST",
       headers: {
         "Content-Type": "application/json"
       },
       body: JSON.stringify({
-        clientId,
+        clientId: clientId && clientId !== "local-client" ? clientId : TEST_CLIENT_ID,
         subdomain: form.subdomain,
         customDomain: form.customDomain,
+        visualDirection: form.visualDirection,
         acceptedTerms: form.terms
       })
     });
@@ -519,33 +622,33 @@ export default function OnboardingPage() {
   }
 
   return (
-    <main className="min-h-screen overflow-hidden bg-[radial-gradient(circle_at_12%_10%,rgba(219,234,254,0.86),transparent_30%),radial-gradient(circle_at_88%_12%,rgba(204,251,241,0.52),transparent_32%),linear-gradient(135deg,var(--app-bg)_0%,var(--app-bg-soft)_100%)] p-5 text-foreground md:p-8">
-      <div className="ui-enter mx-auto grid min-h-[calc(100vh-4rem)] max-w-7xl overflow-hidden rounded-[28px] border border-white/80 bg-white shadow-[0_32px_90px_rgba(15,23,42,0.14)] lg:grid-cols-[250px_minmax(0,1fr)_420px]">
-        <aside className="border-b border-app-line-soft bg-white p-6 lg:border-b-0 lg:border-r">
+    <main className="min-h-screen overflow-hidden bg-[radial-gradient(circle_at_12%_10%,rgba(219,234,254,0.86),transparent_30%),radial-gradient(circle_at_88%_12%,rgba(204,251,241,0.52),transparent_32%),linear-gradient(135deg,#f2f4f8_0%,#eef2f6_100%)] p-3 text-foreground sm:p-5 md:p-8">
+      <div className="ui-enter mx-auto grid min-h-[calc(100vh-1.5rem)] max-w-7xl overflow-hidden rounded-[22px] border border-white/80 bg-white shadow-[0_32px_90px_rgba(15,23,42,0.14)] sm:min-h-[calc(100vh-2.5rem)] md:rounded-[28px] lg:grid-cols-[250px_minmax(0,1fr)_420px]">
+        <aside className="border-b border-[#edf0f4] bg-white p-4 sm:p-6 lg:border-b-0 lg:border-r">
           <Link href="/dashboard" className="flex items-center gap-3 text-lg font-bold">
             <SiteRentOnboardingMark />
             SiteRent
           </Link>
-          <div className="mt-16">
+          <div className="mt-8 lg:mt-16">
             <p className="text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground">Create website</p>
             <h1 className="mt-2 text-2xl font-bold tracking-tight">Launch session</h1>
             <p className="mt-2 text-sm leading-6 text-muted-foreground">Build the first useful website draft quickly, then refine only what matters before publishing.</p>
           </div>
           <div className="mt-8 flex gap-3">
             {ONBOARDING_STEPS.map((label, index) => (
-              <span key={label} className={cn("h-1.5 flex-1 rounded-full transition-all duration-500", index <= step ? "bg-foreground" : "bg-app-divider")} />
+              <span key={label} className={cn("h-1.5 flex-1 rounded-full transition-all duration-500", index <= step ? "bg-foreground" : "bg-[#e5e7eb]")} />
             ))}
           </div>
           <div className="mt-3 text-sm font-medium text-muted-foreground">{percent}% complete</div>
-          <nav className="mt-8 space-y-2">
+          <nav className="mt-6 flex gap-2 overflow-x-auto pb-1 [-ms-overflow-style:none] [scrollbar-width:none] lg:mt-8 lg:block lg:space-y-2 lg:overflow-visible lg:pb-0 [&::-webkit-scrollbar]:hidden">
             {ONBOARDING_STEPS.map((label, index) => (
               <button
                 key={label}
                 type="button"
                 onClick={() => index <= step && setStep(index)}
                 className={cn(
-                  "pressable flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-sm font-medium transition hover:bg-app-surface",
-                  index === step && "bg-app-surface text-foreground",
+                  "pressable flex shrink-0 items-center gap-2 rounded-full px-3 py-2.5 text-left text-sm font-medium transition hover:bg-[#f4f6f8] lg:w-full lg:shrink lg:gap-3 lg:rounded-xl",
+                  index === step && "bg-[#f4f6f8] text-foreground",
                   index < step && "text-blue-700",
                   index > step && "text-muted-foreground"
                 )}
@@ -557,7 +660,7 @@ export default function OnboardingPage() {
               </button>
             ))}
           </nav>
-          <div className="mt-8 rounded-xl bg-app-surface p-3">
+          <div className="mt-6 rounded-xl bg-[#f4f6f8] p-3 lg:mt-8">
             <p className="text-xs font-bold uppercase tracking-[0.14em] text-muted-foreground">First-value checklist</p>
             <div className="mt-3 space-y-2">
               {activationTasks.map((task) => (
@@ -570,7 +673,7 @@ export default function OnboardingPage() {
               ))}
             </div>
           </div>
-          <p className="mt-3 rounded-xl bg-app-surface p-3 text-xs font-medium leading-5 text-muted-foreground">
+          <p className="mt-3 rounded-xl bg-[#f4f6f8] p-3 text-xs font-medium leading-5 text-muted-foreground">
             {saveStatus === "idle" && "Progress saves when you continue."}
             {saveStatus === "saving" && "Saving progress..."}
             {saveStatus === "saved" && "Progress saved."}
@@ -579,26 +682,33 @@ export default function OnboardingPage() {
           </p>
         </aside>
 
-          <section className="stagger border-app-line-soft bg-white p-6 md:p-10 lg:border-r overflow-hidden">
+        {errors.length > 0 && (
+          <div className="rounded-md border border-red-200 bg-red-50 p-4 text-sm text-red-800 lg:col-span-3">
+            Please complete: {errors.join(", ")}.
+          </div>
+        )}
+
+          <section className="stagger overflow-hidden border-[#edf0f4] bg-white p-4 sm:p-6 md:p-10 lg:border-r">
             <OnboardingMomentum step={step} percent={percent} />
-            {errors.length > 0 && (
-              <div
-                ref={errorSummaryRef}
-                role="alert"
-                tabIndex={-1}
-                className="mb-6 rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-800 outline-none focus-visible:ring-2 focus-visible:ring-red-400"
-              >
-                <p className="font-semibold">Please complete the following before continuing:</p>
-                <ul className="mt-2 list-disc space-y-1 pl-5">
-                  {errors.map((field) => (
-                    <li key={field}>{field}</li>
-                  ))}
-                </ul>
-              </div>
-            )}
             {step === 0 && (
               <div className="space-y-4">
-                <StepTitle title="Business basics" copy="Tell us who the site is for." />
+                <StepTitle title="Business basics" copy="Choose the closest business type, then confirm the details Gemini should build around." />
+                <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+                  {(Object.entries(INDUSTRY_TEMPLATES) as Array<[IndustryTemplate, (typeof INDUSTRY_TEMPLATES)[IndustryTemplate]]>).map(([key, template]) => (
+                    <button
+                      key={key}
+                      type="button"
+                      onClick={() => applyIndustryTemplate(key)}
+                      className={cn(
+                        "rounded-2xl border bg-white p-4 text-left transition hover:-translate-y-0.5 hover:border-[#111827] hover:shadow-[0_14px_34px_rgba(15,23,42,0.08)]",
+                        form.businessType === key ? "border-[#111827] ring-2 ring-[#111827]/10" : "border-[#e5e7eb]"
+                      )}
+                    >
+                      <span className="text-sm font-bold text-foreground">{template.label}</span>
+                      <span className="mt-2 block text-xs leading-5 text-muted-foreground">{template.defaultTagline}</span>
+                    </button>
+                  ))}
+                </div>
                 <TextInput label="Trading name" value={form.tradingName} onChange={(value) => update("tradingName", value)} />
                 <TextInput label="Tagline" value={form.tagline} onChange={(value) => update("tagline", value)} />
                 <div className="grid gap-4 md:grid-cols-3">
@@ -612,28 +722,60 @@ export default function OnboardingPage() {
 
             {step === 1 && (
               <div className="space-y-5">
-                <StepTitle title="Services, trust and area" copy="Choose services, proof points, and areas this business covers." />
+                <StepTitle title="Services, trust and area" copy={`Choose the ${industryTemplate.label.toLowerCase()} services, proof points, and areas this business covers.`} />
                 <div className="grid gap-3 md:grid-cols-2">
-                  {HVAC_SERVICES.map((service) => {
+                  {recommendedServices.map((service) => {
                     const serviceInputId = `service-${service.key}`;
+                    const priceInputId = `service-price-${service.key}`;
+
                     return (
+                      <div key={service.key} className="rounded-lg border border-border bg-background p-4 transition hover:border-[#c7c7c7]">
+                        <div className="flex items-start gap-3">
+                          <input
+                            id={serviceInputId}
+                            type="checkbox"
+                            checked={form.services.includes(service.key)}
+                            onChange={() => toggleService(service.key)}
+                            className="mt-1"
+                          />
+                          <span className="min-w-0 flex-1">
+                            <label htmlFor={serviceInputId} className="block font-semibold">{service.label}</label>
+                            <span className="block text-sm leading-6 text-muted-foreground">{service.description}</span>
+                            <label htmlFor={priceInputId} className="sr-only">Starting price for {service.label}</label>
+                            <input
+                              id={priceInputId}
+                              className="mt-3 h-10 w-full rounded-lg border border-border bg-card px-3 text-sm outline-none transition focus:border-foreground focus:ring-2 focus:ring-ring/20"
+                              placeholder="Starting price, e.g. 650"
+                              value={form.servicePrices[service.key] ?? ""}
+                              onChange={(event) =>
+                                setForm((current) => ({
+                                  ...current,
+                                  servicePrices: { ...current.servicePrices, [service.key]: event.target.value }
+                                }))
+                              }
+                            />
+                          </span>
+                        </div>
+                      </div>
+                    );
+                  })}
+                  {form.customServices.map((service) => (
                     <div key={service.key} className="rounded-lg border border-border bg-background p-4 transition hover:border-[#c7c7c7]">
                       <div className="flex items-start gap-3">
                         <input
-                          id={serviceInputId}
+                          id={`service-${service.key}`}
                           type="checkbox"
                           checked={form.services.includes(service.key)}
                           onChange={() => toggleService(service.key)}
                           className="mt-1"
                         />
-                        <div className="min-w-0 flex-1">
-                          <label htmlFor={serviceInputId} className="block font-semibold">{service.label}</label>
-                          <span className="block text-sm leading-6 text-muted-foreground">{service.description}</span>
+                        <span className="min-w-0 flex-1">
+                          <label htmlFor={`service-${service.key}`} className="block font-semibold">{service.label}</label>
+                          <span className="block text-sm leading-6 text-muted-foreground">Custom service added for this business.</span>
                           <input
-                            aria-label={`Starting price for ${service.label}`}
                             className="mt-3 h-10 w-full rounded-lg border border-border bg-card px-3 text-sm outline-none transition focus:border-foreground focus:ring-2 focus:ring-ring/20"
-                            placeholder="Starting price, e.g. 650"
-                            value={form.servicePrices[service.key] ?? ""}
+                            placeholder="Starting price"
+                            value={form.servicePrices[service.key] ?? service.price ?? ""}
                             onChange={(event) =>
                               setForm((current) => ({
                                 ...current,
@@ -641,12 +783,15 @@ export default function OnboardingPage() {
                               }))
                             }
                           />
-                        </div>
+                          <button type="button" onClick={() => removeCustomService(service.key)} className="mt-3 text-xs font-bold text-red-700">
+                            Remove custom service
+                          </button>
+                        </span>
                       </div>
                     </div>
-                    );
-                  })}
+                  ))}
                 </div>
+                <AddCustomService onAdd={addCustomService} />
                 <div className="grid gap-4 md:grid-cols-2">
                   <TextInput label="Primary city" value={form.primaryCity} onChange={(value) => update("primaryCity", value)} />
                   <TextInput label="Business address" value={form.address} onChange={(value) => update("address", value)} />
@@ -690,7 +835,7 @@ export default function OnboardingPage() {
 
             {step === 2 && (
               <div className="space-y-5">
-                <StepTitle title="Branding and starter style" copy="Choose the full-bleed website look. Photos and logo can be added now or after the first publish." />
+                <StepTitle title="Website look and notes" copy="Choose the visual direction and add notes for Gemini before the final website build." />
                 <div className="grid gap-3 md:grid-cols-2">
                   {Object.entries(TEMPLATE_STYLES).map(([key, style]) => (
                     <button
@@ -719,6 +864,7 @@ export default function OnboardingPage() {
                   <UploadField label="Hero photo" uploadType="hero" value={form.heroPhotoUrl} clientId={clientId} onUploaded={(url) => update("heroPhotoUrl", url)} />
                   <UploadField label="Owner photo" uploadType="owner" value={form.ownerPhotoUrl} clientId={clientId} onUploaded={(url) => update("ownerPhotoUrl", url)} />
                 </div>
+                <TextArea label="Notes for Gemini" value={form.visualDirection} onChange={(value) => update("visualDirection", value)} />
                 <StepTitle title="Brand colour" copy="This still controls small accents in the dashboard and generated metadata." />
                 <div className="grid gap-3 sm:grid-cols-3">
                   {Object.entries(BRAND_COLOURS).map(([key, colour]) => (
@@ -766,7 +912,7 @@ export default function OnboardingPage() {
                 </label>
                 <div className="grid gap-2 md:grid-cols-2">
                   {WEEK_DAYS.map((day) => (
-                    <div key={day} className="grid grid-cols-[1fr_84px_84px_70px] items-center gap-2 rounded-lg border border-border bg-background p-3 text-sm">
+                    <div key={day} className="grid grid-cols-2 items-center gap-2 rounded-lg border border-border bg-background p-3 text-sm sm:grid-cols-[1fr_84px_84px_70px]">
                       <span className="font-semibold">{day}</span>
                       <input
                         className="h-9 rounded-lg border border-border bg-card px-2 text-sm outline-none disabled:bg-secondary"
@@ -805,14 +951,15 @@ export default function OnboardingPage() {
                   </div>
                   <h2 className="text-2xl font-bold">R300/month</h2>
                   <ul className="mt-4 space-y-2 text-sm text-muted-foreground">
-                    <li>Included: hosted HVAC website</li>
+                    <li>Included: hosted service-business website</li>
                     <li>Included: dashboard and analytics</li>
                     <li>Waived setup fee: R0</li>
                   </ul>
-                  <button type="button" disabled={paymentStatus === "starting" || paymentStatus === "redirecting"} onClick={startPayment} className="mt-6 w-full rounded-lg bg-accent px-4 py-3 font-semibold text-accent-foreground disabled:cursor-not-allowed disabled:opacity-60">
-                    {paymentStatus === "starting" ? "Preparing Peach..." : paymentStatus === "redirecting" ? "Redirecting..." : "Pay with Peach Payments"}
+                  <button type="button" onClick={startPayment} className="mt-6 w-full rounded-lg bg-accent px-4 py-3 font-semibold text-accent-foreground">
+                    {paymentStatus === "starting" ? "Preparing Peach..." : "Pay with Peach Payments"}
                   </button>
                   {paymentStatus === "redirecting" && <p className="mt-3 text-sm font-semibold text-muted-foreground">Redirecting to Peach Checkout...</p>}
+                  {paymentStatus === "local" && <p className="mt-3 text-sm font-semibold text-emerald-700">Local mode: payment treated as successful.</p>}
                   {paymentStatus === "error" && <p className="mt-3 text-sm font-semibold text-red-700">Could not start payment. Please retry.</p>}
                   <p className="mt-4 text-sm text-muted-foreground">30-day refund. No contracts. Local support.</p>
                 </div>
@@ -845,7 +992,7 @@ export default function OnboardingPage() {
                 </label>
                 <button
                   type="button"
-                  disabled={!form.terms || subdomainStatus === "taken" || publishStatus === "publishing"}
+                  disabled={!form.terms || subdomainStatus === "taken"}
                   onClick={publishSite}
                   className="rounded-lg bg-accent px-5 py-3 font-semibold text-accent-foreground disabled:cursor-not-allowed disabled:bg-slate-300"
                 >
@@ -866,15 +1013,15 @@ export default function OnboardingPage() {
                   <ArrowLeft size={16} /> Back
                 </button>
                 {step < 5 && (
-                  <button type="button" disabled={saveStatus === "saving"} onClick={continueStep} className="inline-flex items-center gap-2 rounded-lg bg-accent px-4 py-2 font-semibold text-accent-foreground disabled:cursor-not-allowed disabled:opacity-60">
-                    {saveStatus === "saving" ? "Saving..." : "Continue"} <ArrowRight size={16} />
+                  <button type="button" onClick={continueStep} className="inline-flex items-center gap-2 rounded-lg bg-accent px-4 py-2 font-semibold text-accent-foreground">
+                    Continue <ArrowRight size={16} />
                   </button>
                 )}
               </div>
             )}
           </section>
 
-          <aside className="relative hidden overflow-hidden bg-[linear-gradient(135deg,#fbfbfc_0%,var(--app-bg-soft)_100%)] p-6 lg:block">
+          <aside className="relative hidden overflow-hidden bg-[linear-gradient(135deg,#fbfbfc_0%,#eef2f6_100%)] p-6 lg:block">
               <div className="absolute right-[-110px] top-16 h-72 w-72 rounded-full bg-blue-100/60 blur-3xl" />
               <div className="absolute bottom-16 left-[-90px] h-72 w-72 rounded-full bg-emerald-100/60 blur-3xl" />
               <div className="relative rounded-[24px] border border-white/80 bg-white/86 p-5 shadow-[0_28px_80px_rgba(15,23,42,0.12)] backdrop-blur-xl">
@@ -894,7 +1041,7 @@ export default function OnboardingPage() {
                 <p className="text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground">What happens next</p>
                 <div className="mt-4 space-y-3">
                   {["AI prepares your first draft", "You preview and publish", "Leads arrive in the dashboard"].map((item, index) => (
-                    <div key={item} className="flex items-center gap-3 rounded-xl bg-app-surface p-3 text-sm font-medium">
+                    <div key={item} className="flex items-center gap-3 rounded-xl bg-[#f4f6f8] p-3 text-sm font-medium">
                       <span className="grid size-7 place-items-center rounded-full bg-white text-xs font-bold">{index + 1}</span>
                       {item}
                     </div>
@@ -907,13 +1054,37 @@ export default function OnboardingPage() {
   );
 }
 
+function AddCustomService({ onAdd }: { onAdd: (label: string, price?: string) => void }) {
+  const [label, setLabel] = useState("");
+  const [price, setPrice] = useState("");
+
+  return (
+    <div className="flex w-full flex-col gap-2 rounded-2xl border border-[#e5e7eb] bg-[#f8fafc] p-3 sm:flex-row sm:items-center">
+      <input className="h-10 flex-1 rounded-lg border border-border bg-card px-3 text-sm" placeholder="Add a custom service" value={label} onChange={(event) => setLabel(event.target.value)} />
+      <input className="h-10 w-full rounded-lg border border-border bg-card px-3 text-sm sm:w-32" placeholder="Price" value={price} onChange={(event) => setPrice(event.target.value)} />
+      <button
+        type="button"
+        onClick={() => {
+          if (!label.trim()) return;
+          onAdd(label.trim(), price.trim());
+          setLabel("");
+          setPrice("");
+        }}
+        className="rounded-lg bg-foreground px-4 py-2 text-sm font-semibold text-white"
+      >
+        Add
+      </button>
+    </div>
+  );
+}
+
 function SiteRentOnboardingMark() {
   return (
-    <span className="grid size-9 shrink-0 grid-cols-2 gap-1 rounded-lg bg-brand-mint p-1">
-      <span className="rounded-[4px] bg-brand-green-500" />
-      <span className="rounded-[4px] bg-brand-green-300" />
-      <span className="rounded-[4px] bg-brand-green-300" />
-      <span className="rounded-[4px] bg-brand-green-700" />
+    <span className="grid size-9 shrink-0 grid-cols-2 gap-1 rounded-lg bg-[#dff8ed] p-1">
+      <span className="rounded-[4px] bg-[#1ecb7b]" />
+      <span className="rounded-[4px] bg-[#48e0a0]" />
+      <span className="rounded-[4px] bg-[#48e0a0]" />
+      <span className="rounded-[4px] bg-[#0bb665]" />
     </span>
   );
 }
@@ -938,7 +1109,7 @@ function OnboardingMomentum({ step, percent }: { step: number; percent: number }
   ];
 
   return (
-    <div className="mb-6 grid gap-3 rounded-2xl border border-[#e6edf5] bg-app-surface-strong p-4 md:grid-cols-[1fr_auto] md:items-center">
+    <div className="mb-6 grid gap-3 rounded-2xl border border-[#e6edf5] bg-[#f8fafc] p-4 md:grid-cols-[1fr_auto] md:items-center">
       <div className="flex items-start gap-3">
         <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-white text-blue-700 shadow-sm">
           {step >= 5 ? <Rocket className="size-5" /> : <Sparkles className="size-5" />}
@@ -970,7 +1141,7 @@ function TextInput({
   return (
     <label className="block text-sm font-semibold text-foreground">
       {label}
-      <div className="mt-2 flex h-12 overflow-hidden rounded-xl border border-app-line bg-white transition duration-200 hover:border-app-border-hover focus-within:border-app-line-strong focus-within:ring-4 focus-within:ring-app-line-strong/10">
+      <div className="mt-2 flex h-12 overflow-hidden rounded-xl border border-[#d9dee5] bg-white transition duration-200 hover:border-[#b8c0cc] focus-within:border-[#111827] focus-within:ring-4 focus-within:ring-[#111827]/10">
         <input className="w-full bg-transparent px-4 text-sm outline-none" value={value} onChange={(event) => onChange(event.target.value)} />
         {suffix && <span className="border-l border-border bg-secondary px-3 py-2 text-sm text-muted-foreground">{suffix}</span>}
       </div>
@@ -982,7 +1153,7 @@ function TextArea({ label, value, onChange }: { label: string; value: string; on
   return (
     <label className="block text-sm font-semibold text-foreground">
       {label}
-      <textarea className="mt-2 min-h-32 w-full rounded-xl border border-app-line bg-white px-4 py-3 text-sm outline-none transition duration-200 hover:border-app-border-hover focus:border-app-line-strong focus:ring-4 focus:ring-app-line-strong/10" value={value} onChange={(event) => onChange(event.target.value)} />
+      <textarea className="mt-2 min-h-32 w-full rounded-xl border border-[#d9dee5] bg-white px-4 py-3 text-sm outline-none transition duration-200 hover:border-[#b8c0cc] focus:border-[#111827] focus:ring-4 focus:ring-[#111827]/10" value={value} onChange={(event) => onChange(event.target.value)} />
     </label>
   );
 }
@@ -997,7 +1168,7 @@ function ToggleGrid({ form, update }: { form: FormState; update: <Key extends ke
   return (
     <div className="grid gap-3 sm:grid-cols-2">
       {toggles.map(([key, label]) => (
-        <label key={key} className="pressable flex items-center gap-3 rounded-xl border border-app-divider bg-app-surface-strong p-3 text-sm font-semibold transition hover:border-app-line-strong hover:bg-white">
+        <label key={key} className="pressable flex items-center gap-3 rounded-xl border border-[#e5e7eb] bg-[#f8fafc] p-3 text-sm font-semibold transition hover:border-[#111827] hover:bg-white">
           <input type="checkbox" checked={Boolean(form[key])} onChange={(event) => update(key, event.target.checked as never)} />
           {label}
         </label>
@@ -1053,7 +1224,7 @@ function UploadField({
   }
 
   return (
-    <label className="pressable flex min-h-40 cursor-pointer flex-col justify-between rounded-2xl border border-dashed border-[#cfd6df] bg-app-surface-strong p-4 text-sm font-semibold transition hover:border-app-line-strong hover:bg-white">
+    <label className="pressable flex min-h-40 cursor-pointer flex-col justify-between rounded-2xl border border-dashed border-[#cfd6df] bg-[#f8fafc] p-4 text-sm font-semibold transition hover:border-[#111827] hover:bg-white">
       <input
         type="file"
         className="sr-only"
@@ -1070,11 +1241,7 @@ function UploadField({
       </span>
       {previewUrl || value ? (
         <span className="mt-4 flex items-center gap-2 rounded-xl bg-white p-3 text-muted-foreground shadow-sm">
-          {previewUrl ? (
-            <Image src={previewUrl} alt="" width={40} height={40} unoptimized className="size-10 rounded object-cover" />
-          ) : (
-            <ImageIcon size={18} />
-          )}
+          {previewUrl ? <img src={previewUrl} alt="" className="size-10 rounded object-cover" /> : <ImageIcon size={18} />}
           {status === "uploading" ? "Uploading..." : "Uploaded"}
         </span>
       ) : (
@@ -1104,11 +1271,11 @@ function PreviewCard({ title, theme, form, compact = false }: { title: string; t
     <div className="micro-card overflow-hidden rounded-2xl border border-white/80 bg-white shadow-[0_20px_60px_rgba(15,23,42,0.10)]">
       <div className="p-5 text-white" style={{ background: templatePreviewBackground(form.templateStyle) }}>
         <div className="flex items-center justify-between gap-3 text-sm font-semibold">
-          <span>{form.tradingName || "Your HVAC Business"}</span>
+          <span>{form.tradingName || "Your Service Business"}</span>
           <span className="rounded-full bg-white/20 px-3 py-1">{form.responseTime}</span>
         </div>
         <h2 className={cn("mt-8 font-bold", compact ? "text-2xl" : "text-3xl")}>{title}</h2>
-        <p className="mt-2 text-white/80">{form.tagline || "Reliable HVAC service with clear pricing."}</p>
+        <p className="mt-2 text-white/80">{form.tagline || "Reliable service with clear pricing."}</p>
       </div>
       <div className="grid gap-3 p-5 text-sm">
         <div className="flex items-center justify-between rounded-lg bg-secondary p-3">
@@ -1116,7 +1283,7 @@ function PreviewCard({ title, theme, form, compact = false }: { title: string; t
           <span className="size-4 rounded-full" style={{ backgroundColor: accent }} />
         </div>
         <div className="rounded-lg bg-secondary p-3">
-          {form.jobsCompleted ? `${form.jobsCompleted} jobs completed` : "Jobs completed pending"} - {form.primaryCity || "Primary city"}
+          {form.jobsCompleted || "100+"} jobs completed - {form.primaryCity || "Primary city"}
         </div>
         <div className="flex flex-wrap gap-2">
           {form.suburbs

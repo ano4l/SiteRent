@@ -58,9 +58,9 @@ export function mapClientRowToSite(row: ClientRow): ClientSite {
 
   return {
     id: String(row.id),
-    businessName: String(row.business_name ?? row.trading_name ?? "HVAC Business"),
-    tradingName: String(row.trading_name ?? row.business_name ?? "HVAC Business"),
-    tagline: String(row.tagline ?? "Reliable HVAC service with clear pricing."),
+    businessName: String(row.business_name ?? row.trading_name ?? "Service Business"),
+    tradingName: String(row.trading_name ?? row.business_name ?? "Service Business"),
+    tagline: String(row.tagline ?? "Reliable service with clear pricing."),
     ownerName: String(row.owner_name ?? ""),
     yearFounded: Number(row.year_founded ?? new Date().getFullYear()),
     businessTypes: asStringArray(row.business_types),

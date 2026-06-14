@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { getAuthenticatedUserId } from "@/lib/client-auth";
-import { getMissingSupabaseServiceConfig, hasSupabaseBrowserConfig, productionConfigError } from "@/lib/env";
+import { getMissingSupabaseServiceConfig, hasSupabaseBrowserConfig, isWaasTestMode, productionConfigError } from "@/lib/env";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 
 const republishSchema = z.object({
@@ -13,6 +13,14 @@ export async function POST(request: Request) {
 
   if (!payload.success) {
     return NextResponse.json({ error: "Invalid re-publish payload" }, { status: 400 });
+  }
+
+  if (isWaasTestMode()) {
+    return NextResponse.json({
+      ok: true,
+      mode: "test",
+      republishedAt: new Date().toISOString()
+    });
   }
 
   const supabase = createSupabaseAdminClient();

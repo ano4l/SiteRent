@@ -1,8 +1,9 @@
 import { MONTHLY_PLAN_AMOUNT } from "@/lib/billing";
-import { hasSupabaseBrowserConfig } from "@/lib/env";
+import { hasSupabaseBrowserConfig, isWaasTestMode } from "@/lib/env";
 import { getSiteUrl } from "@/lib/domains";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { TEST_CLIENT_ID, getTestClientSite } from "@/lib/test-data";
 
 export type AdminClient = {
   id: string;
@@ -33,7 +34,7 @@ export type AdminEvent = {
 };
 
 export type AdminDashboardData = {
-  mode: "supabase" | "configuration-required";
+  mode: "supabase" | "configuration-required" | "test";
   authorized: boolean;
   clients: AdminClient[];
   events: AdminEvent[];
@@ -48,6 +49,8 @@ export type AdminDashboardData = {
 };
 
 export async function isCurrentUserAdmin() {
+  if (isWaasTestMode()) return true;
+
   const supabase = createSupabaseAdminClient();
   if (!supabase || !hasSupabaseBrowserConfig()) return false;
 
@@ -64,6 +67,15 @@ export async function isCurrentUserAdmin() {
 }
 
 export async function getAdminDashboardData(): Promise<AdminDashboardData> {
+  if (isWaasTestMode()) {
+    return buildDashboardData({
+      mode: "test",
+      authorized: true,
+      clients: getTestAdminClients(),
+      events: getTestAdminEvents()
+    });
+  }
+
   const supabase = createSupabaseAdminClient();
 
   if (!supabase) {
@@ -149,7 +161,7 @@ function buildDashboardData({
   clients,
   events
 }: {
-  mode: "supabase" | "configuration-required";
+  mode: "supabase" | "configuration-required" | "test";
   authorized: boolean;
   clients: AdminClient[];
   events: AdminEvent[];
@@ -171,4 +183,68 @@ function buildDashboardData({
       onboardingCompletionRate: clients.length ? Math.round((completedClients / clients.length) * 100) : 0
     }
   };
+}
+
+function getTestAdminClients(): AdminClient[] {
+  const site = getTestClientSite();
+
+  return [
+    {
+      id: TEST_CLIENT_ID,
+      businessName: site.businessName,
+      ownerName: site.ownerName,
+      email: site.email,
+      subscriptionStatus: "active",
+      sitePublished: true,
+      publishedAt: "2026-06-14T08:00:00.000Z",
+      subdomain: site.subdomain ?? null,
+      customDomain: site.customDomain ?? null,
+      siteUrl: site.subdomain ? getSiteUrl(site.subdomain) : null,
+      currentStep: 6,
+      completedSteps: [1, 2, 3, 4, 5, 6],
+      nextBillingDate: "2026-07-14",
+      paymentFailedAt: null,
+      subscriptionEndsAt: null,
+      createdAt: "2026-06-12T09:00:00.000Z"
+    },
+    {
+      id: "00000000-0000-4000-8000-000000000003",
+      businessName: "Durban Cool Tech",
+      ownerName: "Ayesha Naidoo",
+      email: "hello@durbancool.example",
+      subscriptionStatus: "pending",
+      sitePublished: false,
+      publishedAt: null,
+      subdomain: "durban-cool-tech",
+      customDomain: null,
+      siteUrl: getSiteUrl("durban-cool-tech"),
+      currentStep: 4,
+      completedSteps: [1, 2, 3, 4],
+      nextBillingDate: null,
+      paymentFailedAt: null,
+      subscriptionEndsAt: null,
+      createdAt: "2026-06-13T11:30:00.000Z"
+    }
+  ];
+}
+
+function getTestAdminEvents(): AdminEvent[] {
+  return [
+    {
+      id: "evt-test-publish",
+      clientId: TEST_CLIENT_ID,
+      eventType: "site_published",
+      status: "published",
+      amount: null,
+      createdAt: "2026-06-14T08:00:00.000Z"
+    },
+    {
+      id: "evt-test-checkout",
+      clientId: TEST_CLIENT_ID,
+      eventType: "checkout_created",
+      status: "pending",
+      amount: MONTHLY_PLAN_AMOUNT,
+      createdAt: "2026-06-13T14:15:00.000Z"
+    }
+  ];
 }

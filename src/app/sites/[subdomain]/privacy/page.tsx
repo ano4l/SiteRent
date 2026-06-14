@@ -1,4 +1,6 @@
+import { isWaasTestMode } from "@/lib/env";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
+import { getTestClientSite } from "@/lib/test-data";
 
 type PrivacyPageProps = {
   params: {
@@ -7,6 +9,14 @@ type PrivacyPageProps = {
 };
 
 async function getPrivacyBusiness(subdomain: string) {
+  if (isWaasTestMode()) {
+    const site = getTestClientSite(subdomain);
+    return {
+      businessName: site.businessName,
+      email: site.email
+    };
+  }
+
   const supabase = createSupabaseAdminClient();
 
   if (!supabase) {

@@ -65,7 +65,7 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
   return (
     <main className="min-h-screen w-full bg-[linear-gradient(180deg,#f8f5ef_0%,#f4efe8_100%)] text-ink">
       <div className="grid min-h-screen w-full lg:grid-cols-[300px_minmax(0,1fr)]">
-        <aside className="border-b border-admin-line-soft bg-white/90 p-5 backdrop-blur lg:sticky lg:top-0 lg:h-screen lg:border-b-0 lg:border-r lg:border-admin-line-soft lg:p-6">
+        <aside className="border-b border-admin-line-soft bg-white/90 p-4 backdrop-blur lg:sticky lg:top-0 lg:h-screen lg:border-b-0 lg:border-r lg:border-admin-line-soft lg:p-6">
           <div className="flex items-center gap-3 rounded-[22px] border border-admin-line-soft bg-admin-surface px-4 py-3 shadow-[0_10px_24px_rgba(17,17,17,0.04)]">
             <div className="grid size-11 place-items-center rounded-2xl bg-[#111111] text-white">
               <Sparkles size={18} />
@@ -76,11 +76,11 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
             </div>
           </div>
 
-          <nav className="mt-6 grid gap-6">
+          <nav className="mt-4 flex gap-2 overflow-x-auto pb-1 [-ms-overflow-style:none] [scrollbar-width:none] lg:mt-6 lg:grid lg:gap-6 lg:overflow-visible lg:pb-0 [&::-webkit-scrollbar]:hidden">
             {navGroups.map((group) => (
-              <div key={group.label}>
-                <p className="mb-2 px-2 text-[10px] font-black uppercase tracking-[0.24em] text-[#9a8e81]">{group.label}</p>
-                <div className="grid gap-1.5">
+              <div key={group.label} className="contents lg:block">
+                <p className="mb-2 hidden px-2 text-[10px] font-black uppercase tracking-[0.24em] text-[#9a8e81] lg:block">{group.label}</p>
+                <div className="contents lg:grid lg:gap-1.5">
                   {group.items.map((item) => {
                     const active = item.href === "/admin" ? pathname === "/admin" : pathname.startsWith(item.href);
 
@@ -89,17 +89,17 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
                         key={item.href}
                         href={item.href}
                         className={cn(
-                          "flex min-h-12 items-center justify-between gap-3 rounded-[18px] border px-3 py-2.5 transition",
+                          "flex min-h-10 shrink-0 items-center justify-between gap-2 rounded-full border px-3 py-2 transition lg:min-h-12 lg:w-full lg:shrink lg:gap-3 lg:rounded-[18px] lg:py-2.5",
                           active
                             ? "border-ink bg-ink text-white shadow-[0_14px_28px_rgba(17,17,17,0.16)]"
                             : "border-transparent bg-transparent text-[#5f574d] hover:border-[#e4dbcf] hover:bg-admin-surface hover:text-ink"
                         )}
                       >
                         <span className="flex items-center gap-3">
-                          <span className={cn("grid size-8 place-items-center rounded-xl", active ? "bg-white/10" : "bg-[#f4efe7]") }>
+                          <span className={cn("grid size-7 place-items-center rounded-full lg:size-8 lg:rounded-xl", active ? "bg-white/10" : "bg-[#f4efe7]") }>
                             <item.icon size={15} className={active ? "text-white" : "text-[#7d7267]"} />
                           </span>
-                          <span className="text-sm font-black">{item.label}</span>
+                          <span className="whitespace-nowrap text-sm font-black">{item.label}</span>
                         </span>
                         {item.count && <span className={cn("rounded-full px-2 py-0.5 text-[10px] font-black", active ? "bg-white/10 text-white" : "bg-[#f2ebe1] text-[#7d7267]")}>{item.count}</span>}
                         {item.badge && <span className={cn("rounded-full px-2 py-0.5 text-[10px] font-black", active ? "bg-white/10 text-white" : "border border-admin-line-soft bg-white text-[#7d7267]")}>{item.badge}</span>}
@@ -111,7 +111,7 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
             ))}
           </nav>
 
-          <div className="mt-6 rounded-[22px] border border-admin-line-soft bg-admin-surface p-4 text-sm font-semibold text-muted shadow-[0_10px_24px_rgba(17,17,17,0.04)]">
+          <div className="mt-6 hidden rounded-[22px] border border-admin-line-soft bg-admin-surface p-4 text-sm font-semibold text-muted shadow-[0_10px_24px_rgba(17,17,17,0.04)] lg:block">
             <div className="flex items-center gap-3 text-ink">
               <div className="grid size-9 place-items-center rounded-2xl bg-[#111111] text-white">
                 <Users size={16} />

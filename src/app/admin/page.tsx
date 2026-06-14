@@ -75,7 +75,7 @@ export default async function AdminPage() {
               <div className="grid size-8 place-items-center rounded-full bg-[#111111] text-xs font-black text-white">SA</div>
               <div className="hidden text-right sm:block">
                 <p className="text-xs font-black text-ink">SiteRent Admin</p>
-                <p className="text-[10px] font-semibold text-muted">{data.mode === "supabase" ? "Supabase" : "Setup required"}</p>
+                <p className="text-[10px] font-semibold text-muted">{data.mode === "test" ? "Test mode" : data.mode === "supabase" ? "Supabase" : "Setup required"}</p>
               </div>
             </div>
           </div>
@@ -126,8 +126,8 @@ export default async function AdminPage() {
         </Panel>
 
         <Panel title="Recent platform events" eyebrow="Activity" actionLabel="See all">
-          <div className="mt-5 overflow-hidden rounded-[22px] border border-admin-line-soft bg-white">
-            <div className="grid grid-cols-[1.1fr_0.8fr_0.6fr_0.6fr] bg-admin-surface px-4 py-3 text-[10px] font-black uppercase tracking-[0.18em] text-[#8b8074]">
+          <div className="mt-5 overflow-x-auto rounded-[22px] border border-admin-line-soft bg-white">
+            <div className="grid min-w-[620px] grid-cols-[1.1fr_0.8fr_0.6fr_0.6fr] bg-admin-surface px-4 py-3 text-[10px] font-black uppercase tracking-[0.18em] text-[#8b8074]">
               <span>Event</span>
               <span>Type</span>
               <span>Status</span>
@@ -135,7 +135,7 @@ export default async function AdminPage() {
             </div>
             {data.events.length ? (
               data.events.map((event) => (
-                <div key={event.id} className="grid grid-cols-[1.1fr_0.8fr_0.6fr_0.6fr] items-center border-t border-admin-line-soft px-4 py-3 text-xs md:text-sm">
+                <div key={event.id} className="grid min-w-[620px] grid-cols-[1.1fr_0.8fr_0.6fr_0.6fr] items-center border-t border-admin-line-soft px-4 py-3 text-xs md:text-sm">
                   <span className="font-bold text-ink">{formatDate(event.createdAt)}</span>
                   <span className="font-semibold text-muted">{event.eventType.replace(/_/g, " ")}</span>
                   <StatusPill status={event.status} />

@@ -1,7 +1,7 @@
 import { createServerClient, type CookieOptions } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 
-import { getMissingSupabaseBrowserConfig, getSupabasePublishableKey, hasSupabaseBrowserConfig } from "@/lib/env";
+import { getMissingSupabaseBrowserConfig, getSupabasePublishableKey, hasSupabaseBrowserConfig, isWaasTestMode } from "@/lib/env";
 
 const protectedPagePrefixes = ["/admin", "/builder", "/dashboard", "/onboarding", "/tutorial"];
 const protectedApiPrefixes = [
@@ -37,6 +37,12 @@ function redirectToLogin(request: NextRequest) {
 export async function middleware(request: NextRequest) {
   const pathname = request.nextUrl.pathname;
   const protectedRoute = isProtectedRoute(pathname);
+
+  if (isWaasTestMode()) {
+    const response = NextResponse.next();
+    response.headers.set("x-siterent-mode", "test");
+    return response;
+  }
 
   if (!hasSupabaseBrowserConfig()) {
     if (!protectedRoute) return NextResponse.next();

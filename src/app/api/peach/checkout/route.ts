@@ -8,12 +8,13 @@ import {
   getPeachCheckoutUrl,
   hasPeachCheckoutConfig
 } from "@/lib/peach";
-import { getMissingSupabaseServiceConfig, hasSupabaseBrowserConfig, productionConfigError } from "@/lib/env";
+import { getMissingSupabaseServiceConfig, hasSupabaseBrowserConfig, isWaasTestMode, productionConfigError } from "@/lib/env";
 import { getAuthenticatedUserId } from "@/lib/client-auth";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
+import { TEST_CLIENT_ID } from "@/lib/test-data";
 
 const checkoutSchema = z.object({
-  clientId: z.string().uuid(),
+  clientId: z.string().uuid().optional(),
   businessName: z.string().min(1),
   email: z.string().email().optional().or(z.literal("")),
   phone: z.string().optional(),
@@ -25,6 +26,19 @@ export async function POST(request: Request) {
 
   if (!payload.success) {
     return NextResponse.json({ error: "Invalid checkout payload" }, { status: 400 });
+  }
+
+  if (isWaasTestMode()) {
+    return NextResponse.json({
+      ok: true,
+      mode: "local",
+      clientId: payload.data.clientId ?? TEST_CLIENT_ID,
+      message: "Test mode: Peach checkout was treated as successful."
+    });
+  }
+
+  if (!payload.data.clientId) {
+    return NextResponse.json({ error: "Client ID is required before checkout can start." }, { status: 400 });
   }
 
   if (!hasPeachCheckoutConfig()) {

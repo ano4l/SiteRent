@@ -3,7 +3,9 @@ import Script from "next/script";
 import { HvacSite } from "@/components/published/hvac-site";
 import { mapClientRowToSite } from "@/lib/client-site-mapper";
 import { getSiteUrl } from "@/lib/domains";
+import { isWaasTestMode } from "@/lib/env";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
+import { getTestClientSite } from "@/lib/test-data";
 import type { ClientSite } from "@/lib/types";
 
 type PublishedSitePageProps = {
@@ -16,6 +18,10 @@ type PublishedSitePageProps = {
 };
 
 async function getSite(subdomain: string) {
+  if (isWaasTestMode()) {
+    return getTestClientSite(subdomain);
+  }
+
   const supabase = createSupabaseAdminClient();
 
   if (!supabase) {
@@ -33,6 +39,8 @@ async function getSite(subdomain: string) {
 }
 
 async function getSiteStatus(subdomain: string) {
+  if (isWaasTestMode()) return { suspended: false };
+
   const supabase = createSupabaseAdminClient();
   if (!supabase) return { suspended: false };
 
@@ -68,14 +76,14 @@ export async function generateMetadata({ params }: PublishedSitePageProps): Prom
 
   return {
     title: {
-      absolute: `${site.businessName} - HVAC & Plumbing in ${site.primaryCity}`
+      absolute: `${site.businessName} - Local Services in ${site.primaryCity}`
     },
     description: site.tagline,
     alternates: {
       canonical: url
     },
     openGraph: {
-      title: `${site.businessName} - HVAC & Plumbing in ${site.primaryCity}`,
+      title: `${site.businessName} - Local Services in ${site.primaryCity}`,
       description: site.tagline,
       url,
       images: site.heroPhotoUrl ? [{ url: site.heroPhotoUrl }] : undefined,

@@ -2,6 +2,11 @@ export function getSupabasePublishableKey() {
   return process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY ?? process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 }
 
+export function isWaasTestMode() {
+  const value = process.env.WAAS_TEST_MODE ?? process.env.NEXT_PUBLIC_WAAS_TEST_MODE ?? "";
+  return ["1", "true", "yes", "on"].includes(value.toLowerCase());
+}
+
 export function hasSupabaseBrowserConfig() {
   return Boolean(process.env.NEXT_PUBLIC_SUPABASE_URL && getSupabasePublishableKey());
 }

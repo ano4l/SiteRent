@@ -1,6 +1,7 @@
-import { hasSupabaseBrowserConfig } from "@/lib/env";
+import { hasSupabaseBrowserConfig, isWaasTestMode } from "@/lib/env";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { getTestClientSite, TEST_CLIENT_ID } from "@/lib/test-data";
 
 export type DashboardClient = {
   id: string;
@@ -29,7 +30,7 @@ export type DashboardClient = {
 
 export type DashboardData = {
   client: DashboardClient;
-  mode: "supabase" | "configuration-required";
+  mode: "supabase" | "configuration-required" | "test";
   isAuthenticated: boolean;
   hasWebsite: boolean;
 };
@@ -60,6 +61,15 @@ const emptyClient: DashboardClient = {
 };
 
 export async function getDashboardData(): Promise<DashboardData> {
+  if (isWaasTestMode()) {
+    return {
+      client: getTestDashboardClient(),
+      mode: "test",
+      isAuthenticated: true,
+      hasWebsite: true
+    };
+  }
+
   const admin = createSupabaseAdminClient();
   if (!admin || !hasSupabaseBrowserConfig()) {
     return { client: emptyClient, mode: "configuration-required", isAuthenticated: false, hasWebsite: false };
@@ -85,5 +95,34 @@ export async function getDashboardData(): Promise<DashboardData> {
     mode: "supabase",
     isAuthenticated: true,
     hasWebsite: Boolean(data)
+  };
+}
+
+function getTestDashboardClient(): DashboardClient {
+  const site = getTestClientSite();
+
+  return {
+    id: TEST_CLIENT_ID,
+    business_name: site.businessName,
+    trading_name: site.tradingName,
+    tagline: site.tagline,
+    phone: site.phone,
+    whatsapp: site.whatsapp,
+    email: site.email,
+    primary_city: site.primaryCity,
+    address: site.address ?? null,
+    subdomain: site.subdomain ?? null,
+    custom_domain: site.customDomain ?? null,
+    site_published: true,
+    published_at: "2026-06-14T08:00:00.000Z",
+    subscription_status: "active",
+    next_billing_date: "2026-07-14",
+    payment_failed_at: null,
+    subscription_ends_at: null,
+    gallery_photos: site.galleryPhotos,
+    ga_measurement_id: site.gaMeasurementId ?? null,
+    pixel_id: site.pixelId ?? null,
+    google_place_id: "ChIJ-test-place",
+    template_style: site.templateStyle ?? "coolair-blue"
   };
 }

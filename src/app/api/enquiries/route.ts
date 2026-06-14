@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import { getMissingSupabaseServiceConfig, productionConfigError } from "@/lib/env";
+import { getMissingSupabaseServiceConfig, isWaasTestMode, productionConfigError } from "@/lib/env";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 
 const enquirySchema = z.object({
@@ -48,6 +48,14 @@ export async function POST(request: Request) {
 
   if (isRateLimited(getClientIp(request))) {
     return NextResponse.json({ error: "Too many requests. Please try again shortly." }, { status: 429 });
+  }
+
+  if (isWaasTestMode()) {
+    return NextResponse.json({
+      ok: true,
+      mode: "test",
+      receivedAt: new Date().toISOString()
+    });
   }
 
   const supabase = createSupabaseAdminClient();

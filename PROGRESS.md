@@ -2,11 +2,42 @@
 
 ## Objective
 
-Build the MVP Website-as-a-Service platform described in `SiteRent_Developer_Brief.pdf`: a South African HVAC-first website rental platform with guided onboarding, Peach Payments recurring billing, Supabase-backed published sites, client dashboard, and admin panel.
+Build the MVP Website-as-a-Service platform described in `SiteRent_Developer_Brief.pdf`: a South African service-business website rental platform with guided onboarding, Gemini-assisted website planning, Peach Payments recurring billing, Supabase-backed published sites, client dashboard, and admin panel.
 
 This document is the running implementation ledger. It must be updated after every implementation pass.
 
 ## Latest Pass
+
+2026-06-14:
+
+- Mobile optimization and temporary test-mode pass:
+  - Added explicit `WAAS_TEST_MODE` / `NEXT_PUBLIC_WAAS_TEST_MODE` switches and turned them on in local env so this checkout can run without a Supabase database for now.
+  - Bypassed middleware auth only in test mode, and supplied deterministic sample client/site/admin data for dashboard, admin, and published-site routes.
+  - Added test-mode responses for onboarding save, dashboard updates, uploads, subdomain checks, publish/re-publish, Peach checkout, billing cancel, admin client actions, public enquiries, and AI website plan generation.
+  - Updated `/login` with a visible database-free test-mode path so it does not instantiate the Supabase browser client while test mode is active.
+  - Improved mobile layouts across landing, login, builder, onboarding, dashboard, and admin: compact page shells, horizontal mobile navs, stacked narrow form rows, scroll-safe wide tables, mobile dashboard section navigation, and a back path from mobile website preview.
+  - Generalized onboarding beyond HVAC with industry presets for plumbers, geyser repair, electricians, locksmiths, pest control, roofing, HVAC, solar, barbers, and photographers.
+  - Restored `/builder` -> `/onboarding?fromBuilder=1` draft handoff and added visual-direction notes so Gemini can carry customer website-look instructions into onboarding.
+  - Updated local publish to simulate the Gemini website-ready email handoff with an `Open dashboard` button target, while production still queues the email event through the existing provider path.
+  - Local paths verified on `http://127.0.0.1:3000`:
+    - `/`
+    - `/builder`
+    - `/onboarding?fromBuilder=1` after generating a plumber draft in `/builder`
+    - `/onboarding?demo=1` through all six steps, local Peach success, publish, and redirect to `/dashboard`
+    - `/dashboard`
+    - `/sites/brightspark-electricians`
+  - Local test-mode APIs verified:
+    - `GET /api/subdomains/check?subdomain=brightspark-electricians`
+    - `POST /api/ai/website-plan`
+    - `POST /api/onboarding/save`
+    - `POST /api/peach/checkout`
+    - `POST /api/publish`
+    - `POST /api/uploads`
+  - Verification after the pass:
+    - `npm.cmd run typecheck` passed
+    - `npm.cmd run lint` passed with the existing onboarding raw `<img>` upload-preview warning
+    - `npm.cmd run build` passed with the same warning
+    - Browser mobile checks at 390px width confirmed no horizontal overflow on `/onboarding?fromBuilder=1`, `/onboarding?demo=1`, and `/dashboard`
 
 2026-06-03:
 

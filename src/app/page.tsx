@@ -18,7 +18,7 @@ import {
 
 export const metadata: Metadata = {
   title: "SiteRent Websites for Trade Businesses",
-  description: "Launch a rental website for South African HVAC and trade businesses with AI-assisted setup, hosting, billing, and a simple dashboard."
+  description: "Launch a rental website for South African service businesses with AI-assisted setup, hosting, billing, and a simple dashboard."
 };
 
 const workflow = [
@@ -52,7 +52,7 @@ export default function HomePage() {
   return (
     <main className="min-h-screen bg-[linear-gradient(180deg,#f8fafc_0%,#eef2f7_100%)] text-foreground">
       <header className="sticky top-0 z-40 border-b border-white/70 bg-white/76 backdrop-blur-2xl">
-        <div className="mx-auto flex h-20 max-w-7xl items-center justify-between px-5 lg:px-8">
+        <div className="mx-auto flex min-h-16 max-w-7xl items-center justify-between gap-3 px-4 py-3 sm:h-20 sm:px-5 lg:px-8">
           <Link href="/" className="flex items-center gap-3 text-lg font-bold">
             <SiteRentMark />
             SiteRent
@@ -82,11 +82,11 @@ export default function HomePage() {
               <Sparkles className="size-4 text-blue-600" />
               Website rental for service businesses
             </div>
-            <h1 className="mt-7 text-5xl font-bold leading-[0.98] tracking-tight text-foreground md:text-7xl">
+            <h1 className="mt-7 text-4xl font-bold leading-[1.02] tracking-tight text-foreground sm:text-5xl md:text-7xl md:leading-[0.98]">
               Launch the first useful website tonight.
             </h1>
             <p className="mt-6 max-w-2xl text-base leading-8 text-muted-foreground md:text-lg">
-              SiteRent gives HVAC and trade businesses a guided website setup, AI-assisted copy direction, hosting, billing, and a dashboard that keeps the basics moving after publish.
+              SiteRent gives trade, local service, and appointment businesses a guided website setup, AI-assisted copy direction, hosting, billing, and a dashboard that keeps the basics moving after publish.
             </p>
             <div className="mt-8 flex flex-wrap gap-3">
               <Link href="/login?next=/builder" className="inline-flex items-center gap-2 rounded-xl bg-foreground px-5 py-3.5 text-sm font-bold text-white shadow-[0_22px_42px_rgba(15,23,42,0.2)] transition hover:bg-black">
@@ -203,7 +203,7 @@ function ProductPreview() {
   return (
     <div className="relative">
       <div className="absolute -inset-8 rounded-[48px] bg-white/34 blur-3xl" />
-      <div className="relative overflow-hidden rounded-[30px] border border-white/80 bg-[#0f172a] p-4 shadow-[0_34px_100px_rgba(15,23,42,0.28)]">
+      <div className="relative overflow-hidden rounded-[24px] border border-white/80 bg-[#0f172a] p-3 shadow-[0_34px_100px_rgba(15,23,42,0.28)] sm:rounded-[30px] sm:p-4">
         <div className="flex items-center gap-2 border-b border-white/10 pb-4">
           <span className="size-3 rounded-full bg-red-400" />
           <span className="size-3 rounded-full bg-amber-300" />
@@ -229,7 +229,7 @@ function ProductPreview() {
                 <span>Your Business</span>
                 <span className="rounded-full bg-[#ff5b18] px-3 py-1">Book service</span>
               </div>
-              <h3 className="mt-10 max-w-sm text-4xl font-black leading-tight">Your service website, ready to review</h3>
+              <h3 className="mt-10 max-w-sm text-3xl font-black leading-tight sm:text-4xl">Your service website, ready to review</h3>
               <p className="mt-3 text-sm text-white/74">A publish-ready preview generated from the first setup pass.</p>
             </div>
             <div className="grid gap-3 p-4 sm:grid-cols-3">

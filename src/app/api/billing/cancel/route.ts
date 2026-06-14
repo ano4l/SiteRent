@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { getSubscriptionPeriodEnd } from "@/lib/billing";
 import { getAuthenticatedUserId } from "@/lib/client-auth";
-import { getMissingSupabaseServiceConfig, hasSupabaseBrowserConfig, productionConfigError } from "@/lib/env";
+import { getMissingSupabaseServiceConfig, hasSupabaseBrowserConfig, isWaasTestMode, productionConfigError } from "@/lib/env";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 
 const cancelSchema = z.object({
@@ -19,6 +19,14 @@ export async function POST(request: Request) {
 
   const periodEnd = getSubscriptionPeriodEnd();
   const supabase = createSupabaseAdminClient();
+
+  if (isWaasTestMode()) {
+    return NextResponse.json({
+      ok: true,
+      mode: "test",
+      subscriptionEndsAt: periodEnd.toISOString()
+    });
+  }
 
   if (!supabase) {
     return NextResponse.json(

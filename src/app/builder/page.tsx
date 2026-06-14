@@ -64,6 +64,7 @@ type BuilderDraft = {
   phone: string;
   email: string;
   servicesAndProof: string;
+  visualDirection: string;
   plan: AiPlan;
   createdAt: string;
   attachmentNames: string[];
@@ -79,6 +80,7 @@ export default function BuilderPage() {
   const [phone, setPhone] = useState("");
   const [email, setEmail] = useState("");
   const [servicesAndProof, setServicesAndProof] = useState("");
+  const [visualDirection, setVisualDirection] = useState("");
   const [mode, setMode] = useState<"create" | "restyle" | "copy-refresh">("create");
   const [preferredTemplateStyle, setPreferredTemplateStyle] = useState<TemplateStyle | "">("coolair-blue");
   const [currentWebsiteContext, setCurrentWebsiteContext] = useState("");
@@ -95,9 +97,10 @@ export default function BuilderPage() {
       `Contact person: ${contactName}`,
       `Phone: ${phone}`,
       `Email: ${email}`,
-      `Services, trust proof, and positioning: ${servicesAndProof}`
+      `Services, trust proof, and positioning: ${servicesAndProof}`,
+      `Website look and customer notes: ${visualDirection}`
     ].filter(Boolean).join("\n");
-  }, [businessName, contactName, email, phone, primaryCity, serviceArea, servicesAndProof]);
+  }, [businessName, contactName, email, phone, primaryCity, serviceArea, servicesAndProof, visualDirection]);
 
   async function generatePlan(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -136,6 +139,7 @@ export default function BuilderPage() {
       phone,
       email,
       servicesAndProof,
+      visualDirection,
       plan,
       createdAt: new Date().toISOString(),
       attachmentNames: attachments.map((file) => file.name)
@@ -146,8 +150,8 @@ export default function BuilderPage() {
   }
 
   return (
-    <main className="min-h-screen bg-[radial-gradient(circle_at_16%_12%,rgba(219,234,254,0.78),transparent_30%),radial-gradient(circle_at_88%_14%,rgba(204,251,241,0.58),transparent_32%),linear-gradient(135deg,var(--app-bg)_0%,var(--app-bg-soft)_100%)] p-5 text-foreground md:p-8">
-      <div className="ui-enter mx-auto min-h-[calc(100vh-4rem)] max-w-7xl overflow-hidden rounded-[28px] border border-white/80 bg-white shadow-[0_32px_90px_rgba(15,23,42,0.14)]">
+    <main className="min-h-screen bg-[radial-gradient(circle_at_16%_12%,rgba(219,234,254,0.78),transparent_30%),radial-gradient(circle_at_88%_14%,rgba(204,251,241,0.58),transparent_32%),linear-gradient(135deg,var(--app-bg)_0%,var(--app-bg-soft)_100%)] p-3 text-foreground sm:p-5 md:p-8">
+      <div className="ui-enter mx-auto min-h-[calc(100vh-1.5rem)] max-w-7xl overflow-hidden rounded-[22px] border border-white/80 bg-white shadow-[0_32px_90px_rgba(15,23,42,0.14)] sm:min-h-[calc(100vh-2.5rem)] md:rounded-[28px]">
         <header className="flex flex-wrap items-center justify-between gap-3 border-b border-app-line-soft px-6 py-5 md:px-8">
           <Link href="/" className="flex items-center gap-3 text-lg font-bold">
             <SiteRentBuilderMark />
@@ -165,12 +169,12 @@ export default function BuilderPage() {
         </header>
 
         <section className="grid gap-0 lg:grid-cols-[440px_minmax(0,1fr)]">
-          <aside className="border-b border-app-line-soft bg-app-surface-strong p-6 lg:border-b-0 lg:border-r lg:p-8">
+          <aside className="border-b border-app-line-soft bg-app-surface-strong p-5 sm:p-6 lg:border-b-0 lg:border-r lg:p-8">
             <div className="inline-flex items-center gap-2 rounded-full bg-white px-3 py-1.5 text-sm font-semibold text-muted-foreground shadow-sm">
               <Sparkles className="size-4 text-blue-600" />
               AI website builder
             </div>
-            <h1 className="mt-5 text-4xl font-bold leading-tight tracking-tight">Generate the first useful website draft.</h1>
+            <h1 className="mt-5 text-3xl font-bold leading-tight tracking-tight sm:text-4xl">Generate the first useful website draft.</h1>
             <p className="mt-3 text-sm leading-7 text-muted-foreground">
               This builder creates a structured website plan, then hands the draft into onboarding so the user can confirm details and publish.
             </p>
@@ -193,6 +197,12 @@ export default function BuilderPage() {
                 minLength={20}
                 required
                 placeholder="Services, guarantees, certifications, response time, tone, ideal customers."
+              />
+              <Textarea
+                label="Website look and notes"
+                value={visualDirection}
+                onChange={setVisualDirection}
+                placeholder="Example: clean premium look, bold quote button, warm photos, show reviews before long service copy."
               />
               <div className="grid gap-3 sm:grid-cols-2">
                 <label className="block text-sm font-semibold text-foreground">
@@ -234,7 +244,7 @@ export default function BuilderPage() {
             </form>
           </aside>
 
-          <section className="p-6 md:p-8">
+          <section className="p-5 sm:p-6 md:p-8">
             {plan ? (
               <PlanResult plan={plan} provider={provider} onContinue={continueToOnboarding} />
             ) : (

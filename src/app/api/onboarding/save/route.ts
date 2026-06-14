@@ -1,14 +1,17 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import { getMissingSupabaseServiceConfig, hasSupabaseBrowserConfig, productionConfigError } from "@/lib/env";
+import { getMissingSupabaseServiceConfig, hasSupabaseBrowserConfig, isWaasTestMode, productionConfigError } from "@/lib/env";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { INDUSTRY_TEMPLATES } from "@/lib/constants";
+import { TEST_CLIENT_ID } from "@/lib/test-data";
 
 const payloadSchema = z.object({
   clientId: z.string().uuid().optional(),
   currentStep: z.number().int().min(1).max(6),
   data: z.object({
     tradingName: z.string().optional(),
+    businessType: z.string().optional(),
     tagline: z.string().optional(),
     ownerName: z.string().optional(),
     yearFounded: z.string().optional(),
@@ -42,6 +45,7 @@ const payloadSchema = z.object({
     facebookUrl: z.string().optional(),
     instagramUrl: z.string().optional(),
     pixelId: z.string().optional(),
+    visualDirection: z.string().max(2000).optional(),
     templateStyle: z.enum(["aireco-dark", "eircool-editorial", "razor-minimal", "coolair-blue"]).optional(),
     brandColour: z.string().optional(),
     logoUrl: z.string().optional(),
@@ -53,11 +57,27 @@ const payloadSchema = z.object({
   })
 });
 
+function parseOptionalNumber(value?: string) {
+  if (!value) return null;
+  const parsed = Number.parseInt(value.replace(/[^\d]/g, ""), 10);
+  return Number.isFinite(parsed) ? parsed : null;
+}
+
 export async function POST(request: Request) {
   const payload = payloadSchema.safeParse(await request.json());
 
   if (!payload.success) {
     return NextResponse.json({ error: "Invalid onboarding payload" }, { status: 400 });
+  }
+
+  if (isWaasTestMode()) {
+    return NextResponse.json({
+      ok: true,
+      mode: "test",
+      clientId: payload.data.clientId ?? TEST_CLIENT_ID,
+      savedAt: new Date().toISOString(),
+      currentStep: payload.data.currentStep
+    });
   }
 
   const supabase = createSupabaseAdminClient();
@@ -91,14 +111,16 @@ export async function POST(request: Request) {
   }
 
   const data = payload.data.data;
+  const businessType = data.businessType && data.businessType in INDUSTRY_TEMPLATES ? data.businessType : null;
   const clientValues = {
     user_id: authUser?.id ?? null,
     business_name: data.tradingName,
     trading_name: data.tradingName,
     tagline: data.tagline,
     owner_name: data.ownerName,
-    year_founded: data.yearFounded ? Number(data.yearFounded) : null,
-    jobs_completed: data.jobsCompleted ? Number(data.jobsCompleted) : null,
+    year_founded: parseOptionalNumber(data.yearFounded),
+    business_types: businessType ? [INDUSTRY_TEMPLATES[businessType as keyof typeof INDUSTRY_TEMPLATES].singular] : [],
+    jobs_completed: parseOptionalNumber(data.jobsCompleted),
     about_text: data.aboutText,
     services: data.services ?? [],
     service_prices: data.servicePrices ?? {},

@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { getMissingSupabaseBrowserConfig, hasSupabaseBrowserConfig } from "@/lib/env";
+import { getMissingSupabaseBrowserConfig, hasSupabaseBrowserConfig, isWaasTestMode } from "@/lib/env";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
 function buildLoginRedirect(requestUrl: URL, next: string, error: string, missing?: string[]) {
@@ -15,6 +15,10 @@ export async function GET(request: Request) {
   const code = requestUrl.searchParams.get("code");
   const next = requestUrl.searchParams.get("next");
   const safeNext = next?.startsWith("/") && !next.startsWith("//") ? next : "/dashboard";
+
+  if (isWaasTestMode()) {
+    return NextResponse.redirect(new URL(safeNext, requestUrl.origin));
+  }
 
   if (!hasSupabaseBrowserConfig()) {
     return buildLoginRedirect(

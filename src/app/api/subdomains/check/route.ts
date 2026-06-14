@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { isValidSubdomain } from "@/lib/domains";
-import { getMissingSupabaseServiceConfig, productionConfigError } from "@/lib/env";
+import { getMissingSupabaseServiceConfig, isWaasTestMode, productionConfigError } from "@/lib/env";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { slugifySubdomain } from "@/lib/utils";
 
@@ -19,6 +19,16 @@ export async function GET(request: Request) {
 
   const subdomain = slugifySubdomain(parsed.data.subdomain);
   const valid = isValidSubdomain(subdomain);
+
+  if (isWaasTestMode()) {
+    return NextResponse.json({
+      subdomain,
+      available: valid,
+      valid,
+      mode: "test"
+    });
+  }
+
   const supabase = createSupabaseAdminClient();
 
   if (!supabase) {

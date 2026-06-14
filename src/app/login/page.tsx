@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { CheckCircle2, LayoutGrid, LockKeyhole, Mail, Sparkles } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
-import { hasSupabaseBrowserConfig } from "@/lib/env";
+import { hasSupabaseBrowserConfig, isWaasTestMode } from "@/lib/env";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Field } from "@/components/ui/input";
@@ -41,6 +41,7 @@ export default function LoginPage({ searchParams }: LoginPageProps) {
     const requestedNext = searchParams?.next;
     return requestedNext?.startsWith("/") && !requestedNext.startsWith("//") ? requestedNext : "/dashboard";
   });
+  const testMode = isWaasTestMode();
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -57,10 +58,16 @@ export default function LoginPage({ searchParams }: LoginPageProps) {
     }
   }, []);
 
-  const title = mode === "register" ? "Create your SiteRent account." : "Sign in to SiteRent.";
-  const copy = mode === "register"
-    ? "Register before using the builder, onboarding, dashboard, or admin tools."
-    : "Access is locked to authenticated users so production client work stays tied to a real account.";
+  const title = testMode
+    ? "SiteRent test mode is on."
+    : mode === "register"
+      ? "Create your SiteRent account."
+      : "Sign in to SiteRent.";
+  const copy = testMode
+    ? "Use the full app with sample client data while Supabase is not required. Production auth stays available when test mode is turned off."
+    : mode === "register"
+      ? "Register before using the builder, onboarding, dashboard, or admin tools."
+      : "Access is locked to authenticated users so production client work stays tied to a real account.";
   const submitting = status === "submitting" || status === "oauth";
   const redirectTo = useMemo(() => {
     if (typeof window === "undefined") return "/auth/callback";
@@ -68,14 +75,26 @@ export default function LoginPage({ searchParams }: LoginPageProps) {
   }, [nextPath]);
 
   function requireSupabase() {
+    if (testMode) return true;
     if (hasSupabaseBrowserConfig()) return true;
     setStatus("config-missing");
     setMessage("Supabase Auth must be configured before production sign-in can continue.");
     return false;
   }
 
+  function continueInTestMode() {
+    setStatus("sent");
+    setMessage("Test mode active: opening the requested workspace with sample data.");
+    window.location.assign(nextPath);
+  }
+
   async function onSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    if (testMode) {
+      continueInTestMode();
+      return;
+    }
+
     if (!requireSupabase()) return;
 
     setStatus("submitting");
@@ -125,6 +144,11 @@ export default function LoginPage({ searchParams }: LoginPageProps) {
   }
 
   async function sendMagicLink() {
+    if (testMode) {
+      continueInTestMode();
+      return;
+    }
+
     if (!email) {
       setStatus("error");
       setMessage("Enter your email address first.");
@@ -154,6 +178,11 @@ export default function LoginPage({ searchParams }: LoginPageProps) {
   }
 
   async function signInWithGoogle() {
+    if (testMode) {
+      continueInTestMode();
+      return;
+    }
+
     if (!requireSupabase()) return;
 
     setStatus("oauth");
@@ -174,20 +203,20 @@ export default function LoginPage({ searchParams }: LoginPageProps) {
   }
 
   return (
-    <main className="min-h-screen overflow-hidden bg-[radial-gradient(circle_at_14%_18%,rgba(219,234,254,0.82),transparent_28%),radial-gradient(circle_at_88%_18%,rgba(204,251,241,0.58),transparent_30%),linear-gradient(135deg,var(--app-bg)_0%,var(--app-bg-soft)_100%)] p-5 text-foreground md:p-8">
-      <section className="ui-enter mx-auto grid min-h-[calc(100vh-4rem)] max-w-7xl overflow-hidden rounded-[28px] border border-white/80 bg-white shadow-[0_32px_90px_rgba(15,23,42,0.14)] lg:grid-cols-[0.92fr_1.08fr]">
-        <div className="flex min-h-[720px] flex-col justify-between px-7 py-8 md:px-12 md:py-10">
+    <main className="min-h-screen overflow-hidden bg-[radial-gradient(circle_at_14%_18%,rgba(219,234,254,0.82),transparent_28%),radial-gradient(circle_at_88%_18%,rgba(204,251,241,0.58),transparent_30%),linear-gradient(135deg,var(--app-bg)_0%,var(--app-bg-soft)_100%)] p-3 text-foreground sm:p-5 md:p-8">
+      <section className="ui-enter mx-auto grid min-h-[calc(100vh-1.5rem)] max-w-7xl overflow-hidden rounded-[22px] border border-white/80 bg-white shadow-[0_32px_90px_rgba(15,23,42,0.14)] sm:min-h-[calc(100vh-2.5rem)] md:rounded-[28px] lg:grid-cols-[0.92fr_1.08fr]">
+        <div className="flex flex-col justify-between px-5 py-6 sm:px-7 sm:py-8 md:px-12 md:py-10 lg:min-h-[720px]">
           <Link href="/" className="flex items-center gap-3 text-xl font-bold">
             <SiteRentAuthMark />
             SiteRent
           </Link>
 
-          <div className="mx-auto w-full max-w-xl py-12">
+          <div className="mx-auto w-full max-w-xl py-8 md:py-12">
             <div className="inline-flex items-center gap-2 rounded-full bg-app-surface px-3 py-1.5 text-sm font-semibold text-muted-foreground">
               <Sparkles className="size-4 text-blue-600" />
-              Production account required
+              {testMode ? "Temporary database-free mode" : "Production account required"}
             </div>
-            <h1 className="mt-7 text-4xl font-bold leading-tight tracking-tight md:text-5xl">{title}</h1>
+            <h1 className="mt-7 text-3xl font-bold leading-tight tracking-tight sm:text-4xl md:text-5xl">{title}</h1>
             <p className="mt-4 max-w-lg text-base leading-7 text-muted-foreground">{copy}</p>
 
             <div className="mt-8 grid grid-cols-2 gap-2 rounded-2xl bg-app-surface p-1">
@@ -206,6 +235,17 @@ export default function LoginPage({ searchParams }: LoginPageProps) {
                 Register
               </button>
             </div>
+
+            {testMode && (
+              <div className="mt-5 rounded-2xl border border-blue-100 bg-blue-50 p-4">
+                <p className="text-sm font-semibold text-blue-900">Supabase is bypassed for this local run.</p>
+                <p className="mt-1 text-sm leading-6 text-blue-800">Dashboard, admin, onboarding, publish, uploads, billing, and AI actions use test responses.</p>
+                <button type="button" onClick={continueInTestMode} className="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-blue-700 px-5 py-3 text-sm font-bold text-white transition hover:bg-blue-800">
+                  Continue without Supabase
+                  <LayoutGrid className="size-4" />
+                </button>
+              </div>
+            )}
 
             <form onSubmit={onSubmit} className="mt-6 space-y-4">
               {mode === "register" && (
@@ -274,7 +314,7 @@ export default function LoginPage({ searchParams }: LoginPageProps) {
           </div>
 
           <div className="grid gap-3 text-sm text-muted-foreground md:grid-cols-3">
-            {["Supabase Auth", "Google OAuth", "Protected workspace"].map((item) => (
+            {(testMode ? ["Test data", "No database required", "Protected routes bypassed"] : ["Supabase Auth", "Google OAuth", "Protected workspace"]).map((item) => (
               <span key={item} className="inline-flex items-center gap-2">
                 <CheckCircle2 className="size-4 text-blue-600" />
                 {item}

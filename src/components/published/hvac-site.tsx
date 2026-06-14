@@ -41,7 +41,7 @@ export function HvacSite({ site }: { site: ClientSite }) {
     colour,
     foundedYears: Math.max(new Date().getFullYear() - site.yearFounded, 1),
     whatsappHref: `https://wa.me/${site.whatsapp.replace(/\D/g, "")}?text=${encodeURIComponent(
-      `Hi ${site.businessName}, I need help with HVAC service.`
+      `Hi ${site.businessName}, I need help with a service.`
     )}`,
     mapQuery: encodeURIComponent(site.address ?? `${site.businessName}, ${site.primaryCity}, South Africa`),
     heroImage: site.heroPhotoUrl ?? site.galleryPhotos[0],
@@ -79,9 +79,9 @@ function SoftOrangeTemplate(ctx: TemplateContext) {
         <TopBar ctx={ctx} tone="soft" />
         <section id="top" className="mx-auto grid max-w-7xl gap-8 px-5 py-12 lg:grid-cols-[0.9fr_1.1fr] lg:py-20">
           <div className="flex flex-col justify-center">
-            <Kicker label="Top-tier HVAC service" className="text-[#687143]" />
+            <Kicker label="Top-tier local service" className="text-[#687143]" />
             <h1 className="mt-4 max-w-2xl text-5xl font-black leading-[0.95] tracking-normal md:text-7xl">
-              Heating and cooling done right.
+              Reliable service done right.
             </h1>
             <p className="mt-5 max-w-xl text-base font-semibold leading-7 text-[#4b4b4b]">{site.tagline}</p>
             <div className="mt-7 flex flex-wrap gap-3">
@@ -95,13 +95,13 @@ function SoftOrangeTemplate(ctx: TemplateContext) {
             </div>
           </div>
           <div className="grid gap-4 md:grid-cols-[1fr_0.75fr]">
-            <Photo src={heroImage} alt={`${site.businessName} HVAC service`} className="min-h-[520px] rounded-[0_80px_0_80px]" priority />
+            <Photo src={heroImage} alt={`${site.businessName} service`} className="min-h-[520px] rounded-[0_80px_0_80px]" priority />
             <div className="grid gap-4">
               <Photo src={ownerImage} alt={site.ownerName} className="min-h-[245px] rounded-[22px]" />
               <RatingCard site={site} />
               <div className="rounded-[22px] bg-[#687143] p-5 text-white">
                 <p className="text-4xl font-black">{jobsCompletedValue(site)}</p>
-                <p className="mt-1 text-sm font-bold text-white/80">Completed HVAC jobs</p>
+                <p className="mt-1 text-sm font-bold text-white/80">Completed jobs</p>
               </div>
             </div>
           </div>
@@ -111,12 +111,12 @@ function SoftOrangeTemplate(ctx: TemplateContext) {
           <div className="grid gap-4 sm:grid-cols-2">
             <FeatureCard icon={ShieldCheck} title="Customer centric approach" copy="Clear estimates, neat work, and follow-up care." accent="bg-[#687143] text-white" />
             <FeatureCard icon={Clock} title="24/7 emergency service" copy={site.hasEmergency ? "Urgent help when breakdowns cannot wait." : "Reliable scheduling for routine work."} />
-            <FeatureCard icon={BadgeCheck} title="Expert technicians" copy={site.certifications[0] ?? "Experienced local HVAC specialists."} />
-            <Photo src={gallery[0]} alt="HVAC project" className="min-h-[220px] rounded-[18px]" />
+            <FeatureCard icon={BadgeCheck} title="Experienced specialists" copy={site.certifications[0] ?? "Experienced local service specialists."} />
+            <Photo src={gallery[0]} alt="Service project" className="min-h-[220px] rounded-[18px]" />
           </div>
           <section className="rounded-[24px] bg-white p-8">
             <Kicker label="About us" className="text-[#687143]" />
-            <h2 className="mt-4 text-4xl font-black leading-tight">Creating comfortable spaces, one home at a time</h2>
+            <h2 className="mt-4 text-4xl font-black leading-tight">Creating reliable service experiences, one job at a time</h2>
             <p className="mt-5 leading-8 text-[#555555]">{site.aboutText}</p>
             <PrimaryLink href={whatsappHref} label="Chat on WhatsApp" className="mt-6 bg-[#687143] text-white" />
           </section>
@@ -161,9 +161,9 @@ function DarkPremiumTemplate(ctx: TemplateContext) {
 
         <div className="relative z-10 mx-auto grid max-w-[1280px] gap-10 px-5 pb-14 pt-8 md:px-8 lg:grid-cols-[1.05fr_0.95fr] lg:pb-18">
           <div>
-            <p className="text-xs font-black uppercase tracking-[0.12em] text-[#2d55c5]">HVAC specialists in {site.primaryCity}</p>
+            <p className="text-xs font-black uppercase tracking-[0.12em] text-[#2d55c5]">Service specialists in {site.primaryCity}</p>
             <h1 className="mt-5 max-w-4xl text-[clamp(2.8rem,5.9vw,5.9rem)] font-black uppercase leading-[0.9] tracking-normal">
-              Trusted <span className="font-serif italic font-normal">HVAC</span>
+              Trusted <span className="font-serif italic font-normal">service</span>
               <br />
               partner -
               <span className="font-serif italic font-normal"> over {foundedYears} years.</span>
@@ -179,10 +179,10 @@ function DarkPremiumTemplate(ctx: TemplateContext) {
             </div>
             <div className="mt-8 grid gap-5 lg:grid-cols-[1fr_0.56fr]">
               <div className="grid grid-cols-3 gap-3">
-                <Photo src={heroImage} alt={`${site.businessName} HVAC installation`} className="col-span-3 min-h-[330px] rounded-none md:col-span-2" priority />
+                <Photo src={heroImage} alt={`${site.businessName} service work`} className="col-span-3 min-h-[330px] rounded-none md:col-span-2" priority />
                 <div className="grid gap-3">
-                  <HeroServiceTile icon={Flame} label="Heating" />
-                  <HeroServiceTile icon={Snowflake} label="Cooling" />
+                  <HeroServiceTile icon={Flame} label={serviceLabelsFor(site, 2)[0] ?? "Service"} />
+                  <HeroServiceTile icon={Snowflake} label={serviceLabelsFor(site, 2)[1] ?? "Support"} />
                 </div>
               </div>
               <div className="grid gap-3 self-stretch">
@@ -213,10 +213,10 @@ function DarkPremiumTemplate(ctx: TemplateContext) {
         <div className="px-6 py-14 md:px-12 lg:px-16">
           <p className="text-xs font-black uppercase text-[#ff6a35]">Your all-in-one</p>
           <h2 className="mt-3 max-w-lg text-4xl font-black uppercase leading-[0.95] md:text-5xl">
-            HVAC solution for every season.
+            Service solution for every customer.
           </h2>
           <p className="mt-6 max-w-md text-sm font-semibold leading-7 text-white/68">
-            Discover one place for air-conditioning repairs, new installations, planned maintenance, and fast emergency support.
+            Discover one place for core services, proof, clear pricing cues, and fast contact routes.
           </p>
           <a href="#contact" className="mt-7 inline-flex rounded-sm bg-[#ff3d00] px-5 py-3 text-sm font-black text-white">Book an appointment now</a>
         </div>
@@ -236,7 +236,7 @@ function DarkPremiumTemplate(ctx: TemplateContext) {
       <section id="proof" className="mx-auto grid max-w-[1520px] bg-[#fbfaf6] lg:grid-cols-[1fr_1fr]">
         <div className="px-6 py-16 md:px-12 lg:px-20">
           <h2 className="mx-auto max-w-xl text-center text-3xl font-black uppercase leading-[0.98] md:text-4xl">
-            Showcase homeowner proof from real projects
+            Showcase customer proof from real projects
           </h2>
           <div className="mt-5 flex justify-center gap-3">
             <span className="rounded-sm border border-[#d8d4cf] bg-white px-4 py-2 text-xs font-black">{site.testimonials.length ? `${site.testimonials.length} testimonials` : "Testimonials pending"}</span>
@@ -246,7 +246,7 @@ function DarkPremiumTemplate(ctx: TemplateContext) {
         </div>
         <div className="border-t border-[#ebe7e1] px-6 py-16 md:px-12 lg:border-l lg:border-t-0 lg:px-20">
           <h2 className="max-w-md text-3xl font-black uppercase leading-[0.98] md:text-4xl">
-            Services available for {site.primaryCity}&apos;s <span className="font-serif italic font-normal">homeowners</span>
+            Services available for {site.primaryCity}&apos;s <span className="font-serif italic font-normal">customers</span>
           </h2>
           <div className="mt-10 grid grid-cols-2 gap-4 text-center text-sm font-black text-[#625d67] md:grid-cols-3">
             {serviceLabelsFor(site, 9).map((service) => (
@@ -279,7 +279,7 @@ function DarkPremiumTemplate(ctx: TemplateContext) {
 
       <section id="contact" className="relative mx-auto grid max-w-[1520px] overflow-hidden bg-[#fbfaf6] lg:grid-cols-[0.92fr_1.08fr]">
         <div className="px-6 py-16 md:px-12 lg:px-20">
-          <p className="text-xs font-black uppercase text-[#ff3d00]">Get comfortable this week</p>
+          <p className="text-xs font-black uppercase text-[#ff3d00]">Get help this week</p>
           <h2 className="mt-3 max-w-2xl text-4xl font-black uppercase leading-[0.95] md:text-6xl">
             Book your estimate with {site.businessName}
           </h2>
@@ -316,9 +316,9 @@ function ArmyBoldTemplate(ctx: TemplateContext) {
         <TopBar ctx={ctx} tone="army" />
         <div className="relative mx-auto grid max-w-7xl gap-8 px-5 pb-12 pt-16 lg:grid-cols-[1fr_420px]">
           <div>
-            <Kicker label={`Bring air to your home in ${site.primaryCity}`} className="text-[#002f75]" />
+            <Kicker label={`Bring reliable service to ${site.primaryCity}`} className="text-[#002f75]" />
             <h1 className="mt-4 max-w-3xl font-black uppercase leading-[0.88] tracking-normal text-[#070707] text-5xl md:text-7xl">
-              Quality HVAC services in {site.primaryCity}
+              Quality local services in {site.primaryCity}
             </h1>
             <p className="mt-5 max-w-xl text-sm font-bold leading-7">{site.tagline}</p>
             <div className="mt-7 flex flex-wrap gap-3">
@@ -361,7 +361,7 @@ function ArmyBoldTemplate(ctx: TemplateContext) {
           <div>
             <Kicker label={`About ${site.businessName}`} className="text-white/70" />
             <h2 className="mt-3 max-w-2xl font-black uppercase leading-[0.95] text-5xl">
-              Providing reliable heating and air conditioning services
+              Providing reliable local services
             </h2>
             <ul className="mt-7 grid gap-3 text-sm font-bold">
               <li>{site.testimonials.length ? "Customer testimonials supplied" : "Testimonials ready to add"}</li>
@@ -369,7 +369,7 @@ function ArmyBoldTemplate(ctx: TemplateContext) {
               <li>{site.hasGuarantee ? "Guaranteed work" : "Workmanship details pending"}</li>
             </ul>
           </div>
-          <Photo src={gallery[1]} alt="Air conditioning repair" className="min-h-[320px] rounded-[18px]" />
+          <Photo src={gallery[1]} alt="Service project" className="min-h-[320px] rounded-[18px]" />
         </div>
       </section>
 
@@ -389,9 +389,9 @@ function BlueCorporateTemplate(ctx: TemplateContext) {
         <TopBar ctx={ctx} tone="blue" />
         <section className="relative mx-auto grid min-h-[640px] max-w-7xl gap-8 px-5 py-16 lg:grid-cols-[0.9fr_1.1fr]">
             <div className="relative z-10 self-center">
-              <Kicker label="Perfect temperature, every time" className="text-white/80" />
+              <Kicker label="Local service, every time" className="text-white/80" />
               <h1 className="mt-4 max-w-2xl text-5xl font-black leading-[1.02] md:text-7xl">
-                Your trusted HVAC experts keeping you comfortable
+                Your trusted service experts, ready to help
               </h1>
               <p className="mt-5 max-w-xl text-base font-semibold leading-8 text-white/82">{site.tagline}</p>
               <div className="mt-7 flex flex-wrap gap-3">
@@ -402,7 +402,7 @@ function BlueCorporateTemplate(ctx: TemplateContext) {
                 {serviceLabelsFor(site, 4).map((service) => <span key={service}>{service}</span>)}
               </div>
             </div>
-            <Photo src={heroImage} alt="HVAC installation" className="absolute inset-0 min-h-full rounded-none opacity-45" priority />
+            <Photo src={heroImage} alt="Service project" className="absolute inset-0 min-h-full rounded-none opacity-45" priority />
             <div className="relative z-10 self-end justify-self-end rounded-md bg-white p-4 text-[#101820] shadow-2xl">
               <div className="flex items-center gap-3">
                 <Star className="fill-[#ff5b18] text-[#ff5b18]" size={20} />
@@ -423,11 +423,11 @@ function BlueCorporateTemplate(ctx: TemplateContext) {
         </div>
         <div className="self-center">
           <Kicker label="About us" className="text-[#ff5b18]" />
-          <h2 className="mt-3 text-5xl font-black leading-tight">The experts you can trust for all your HVAC needs</h2>
+          <h2 className="mt-3 text-5xl font-black leading-tight">The experts you can trust for local service needs</h2>
           <p className="mt-5 leading-8 text-[#4d5965]">{site.aboutText}</p>
           <div className="mt-7 grid gap-3 sm:grid-cols-2">
-            <Badge label="Your trusted HVAC partner" />
-            <Badge label="Delivering unmatched comfort" />
+            <Badge label="Your trusted service partner" />
+            <Badge label="Reliable local help" />
           </div>
           <PrimaryLink href={`tel:${site.phone}`} label={`Call us: ${site.phone}`} className="mt-7 bg-[#ff5b18] text-white" />
         </div>
@@ -477,22 +477,22 @@ function EditorialOrangeTemplate(ctx: TemplateContext) {
           </div>
           <div className="col-span-full grid gap-5 sm:grid-cols-5">
             {gallery.map((photo, index) => (
-              <Photo key={photo} src={photo} alt={`HVAC work ${index + 1}`} className="min-h-[260px] rounded-[10px]" priority={index === 0} />
+              <Photo key={photo} src={photo} alt={`Service work ${index + 1}`} className="min-h-[260px] rounded-[10px]" priority={index === 0} />
             ))}
-            <Photo src={ctx.heroImage} alt="HVAC project" className="min-h-[260px] rounded-[10px] sm:col-span-2" />
+            <Photo src={ctx.heroImage} alt="Service project" className="min-h-[260px] rounded-[10px] sm:col-span-2" />
           </div>
         </section>
 
         <section className="bg-[#230005] px-8 py-16 text-white lg:px-24">
           <div className="grid gap-10 lg:grid-cols-[0.8fr_1fr]">
             <div>
-              <h2 className="text-4xl font-black uppercase leading-tight">Your all-in-one HVAC solution</h2>
+              <h2 className="text-4xl font-black uppercase leading-tight">Your all-in-one service solution</h2>
               <PrimaryLink href="#contact" label="Book a service" className="mt-6 bg-[#ffd51a] text-[#230005]" />
             </div>
             <p className="leading-8 text-white/72">{site.aboutText}</p>
           </div>
           <div className="mt-10 grid gap-3 sm:grid-cols-5">
-            {["Furnaces", "Heat pumps", "AC", "Boilers", "Humidifiers"].map((item) => (
+            {serviceLabelsFor(site, 5).map((item) => (
               <div key={item} className="grid min-h-28 place-items-center border border-white/35 p-4 text-center text-xs font-black uppercase">
                 <Snowflake className="mb-3" />
                 {item}
@@ -504,13 +504,13 @@ function EditorialOrangeTemplate(ctx: TemplateContext) {
         <section className="grid gap-10 px-8 py-16 lg:grid-cols-[1fr_0.9fr] lg:px-16">
           <div>
             <h2 className="text-center text-4xl font-black uppercase leading-tight">
-              Showcase homeowner proof from real projects
+              Showcase customer proof from real projects
             </h2>
             <TestimonialsCompact site={site} />
           </div>
           <div>
             <h2 className="text-4xl font-black uppercase leading-tight">
-              Services available for {site.primaryCity}&apos;s homeowners
+              Services available for {site.primaryCity}&apos;s customers
             </h2>
             <div className="mt-8 grid grid-cols-3 gap-4 text-center text-sm font-black text-[#6a6570]">
               {serviceLabelsFor(site, 6).map((service) => (
@@ -562,12 +562,12 @@ function ServicesMosaic({ ctx, accent }: { ctx: TemplateContext; accent: string 
       <div className="grid gap-8 lg:grid-cols-[0.65fr_1.35fr]">
         <div>
           <Kicker label="Our projects" style={{ color: accent }} />
-          <h2 className="mt-3 text-4xl font-black leading-tight">From concept to completion, our HVAC projects</h2>
+          <h2 className="mt-3 text-4xl font-black leading-tight">From request to completion, our service projects</h2>
           <PrimaryLink href="#contact" label="Schedule your service" className="mt-6 text-white" style={{ backgroundColor: accent }} />
         </div>
         <div className="grid auto-rows-[180px] grid-cols-2 gap-3 md:grid-cols-4">
           {gallery.concat(gallery).slice(0, 5).map((photo, index) => (
-            <Photo key={`${photo}-${index}`} src={photo} alt={`HVAC service ${index + 1}`} className={cn("rounded-[14px]", index === 1 && "md:row-span-2", index === 4 && "md:col-span-2")} />
+            <Photo key={`${photo}-${index}`} src={photo} alt={`Service project ${index + 1}`} className={cn("rounded-[14px]", index === 1 && "md:row-span-2", index === 4 && "md:col-span-2")} />
           ))}
         </div>
       </div>
@@ -582,7 +582,7 @@ function ArmyServices({ ctx }: { ctx: TemplateContext }) {
     <section id="services" className="bg-[linear-gradient(180deg,#f5f5f5_0%,#ffffff_55%,#d9f4ff_100%)] py-16">
       <div className="mx-auto max-w-7xl px-5 text-center">
         <Snowflake className="mx-auto text-[#052f79]" size={42} />
-        <h2 className="mt-4 font-black uppercase leading-tight text-5xl">Our residential HVAC services</h2>
+        <h2 className="mt-4 font-black uppercase leading-tight text-5xl">Our local services</h2>
         <p className="mx-auto mt-4 max-w-3xl text-sm font-semibold leading-7 text-[#4d4d4d]">{site.tagline}</p>
         <div className="mt-10 grid gap-4 md:grid-cols-3">
           {site.services.slice(0, 3).map((key, index) => {
@@ -616,10 +616,10 @@ function FaqAndContact({ ctx, accent }: { ctx: TemplateContext; accent: string }
         <h2 className="mt-3 text-4xl font-black leading-tight">Got questions? We have answers.</h2>
         <div className="mt-6 grid gap-3">
           {[
-            "How often should I service my HVAC system?",
-            "How do I know if my HVAC system needs repair?",
-            "Do you offer emergency HVAC services?",
-            "How long does an HVAC system typically last?"
+            "How quickly can you help?",
+            "How do I know which service I need?",
+            "Do you offer emergency support?",
+            "What happens after I request a quote?"
           ].map((question, index) => (
             <details key={question} className={cn("rounded-[14px] bg-[#f6f6f6] p-4", index === 1 && "text-white")} style={index === 1 ? { backgroundColor: accent } : undefined}>
               <summary className="cursor-pointer text-sm font-black">{question}</summary>

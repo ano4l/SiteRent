@@ -15,7 +15,6 @@ import {
   Clock,
   CreditCard,
   Database,
-  Eye,
   FileText,
   FilePenLine,
   Folder,
@@ -104,6 +103,18 @@ const sectionCopy: Record<Section, string> = {
   support: "Get help with publishing, domains, billing, and change requests."
 };
 
+function getRuntimeStatus(mode: DashboardData["mode"]) {
+  if (mode === "test") {
+    return { tone: "neutral" as const, label: "Test mode sample data" };
+  }
+
+  if (mode === "supabase") {
+    return { tone: "good" as const, label: "Supabase connected" };
+  }
+
+  return { tone: "warn" as const, label: "Production setup required" };
+}
+
 export function WaasDashboard({ data, siteUrl, initialSection = "overview" }: { data: DashboardData; siteUrl: string | null; initialSection?: Section }) {
   const [activeSection, setActiveSection] = useState<Section>(initialSection);
   const [selectedProject, setSelectedProject] = useState<string | null>(initialSection === "overview" ? null : data.client.id);
@@ -150,12 +161,12 @@ export function WaasDashboard({ data, siteUrl, initialSection = "overview" }: { 
 
       <div className={cn("flex min-h-screen flex-1 flex-col transition-all duration-300 ease-out", collapsed ? "md:ml-[78px]" : "md:ml-[280px]")}>
         {activeSection !== "view" && (
-          <header className="sticky top-0 z-30 flex h-20 items-center justify-between border-b border-white/60 bg-white/72 px-7 shadow-[0_10px_30px_rgba(15,23,42,0.04)] backdrop-blur-2xl">
+          <header className="sticky top-0 z-30 flex min-h-20 items-center justify-between gap-3 border-b border-white/60 bg-white/72 px-4 py-3 shadow-[0_10px_30px_rgba(15,23,42,0.04)] backdrop-blur-2xl sm:px-5 md:px-7">
             <div className="min-w-0">
               <h1 className="truncate text-xl font-semibold text-foreground">{displayName}</h1>
               <p className="hidden text-sm text-muted-foreground md:block">{sectionCopy[activeSection]}</p>
             </div>
-            <div className="flex items-center gap-4">
+            <div className="flex shrink-0 items-center gap-2 sm:gap-3 md:gap-4">
               <button type="button" onClick={() => setActiveSection("view")} className="hidden items-center gap-2 rounded-full border border-white/70 bg-white/70 px-4 py-2 text-sm font-semibold text-foreground shadow-[0_12px_28px_rgba(15,23,42,0.08)] backdrop-blur-xl transition hover:bg-white md:inline-flex">
                 <MonitorCheck className="size-4" />
                 View website
@@ -172,7 +183,18 @@ export function WaasDashboard({ data, siteUrl, initialSection = "overview" }: { 
           </header>
         )}
 
-        <section className={cn("flex-1", activeSection === "view" || activeSection === "settings" ? "overflow-hidden px-0 py-0" : "overflow-auto px-7 py-7")}>
+        {activeSection !== "view" && (
+          <MobileProjectNav
+            activeSection={activeSection}
+            setActiveSection={setActiveSection}
+            onProjects={() => {
+              setSelectedProject(null);
+              setActiveSection("overview");
+            }}
+          />
+        )}
+
+        <section className={cn("flex-1", activeSection === "view" || activeSection === "settings" ? "overflow-hidden px-0 py-0" : "overflow-auto px-4 py-5 sm:px-5 md:px-7 md:py-7")}>
           <PublishResultNotice />
           {activeSection !== "view" && activeSection !== "settings" && <FirstUseGuide />}
           <ProjectWorkspace data={data} siteUrl={siteUrl} activeSection={activeSection} setActiveSection={setActiveSection} onBack={() => {
@@ -411,12 +433,67 @@ function ProjectSidebar({
   );
 }
 
-function sectionTitle(section: Section) {
-  return section === "view" ? "View Website" : section.charAt(0).toUpperCase() + section.slice(1);
+function MobileProjectNav({
+  activeSection,
+  setActiveSection,
+  onProjects
+}: {
+  activeSection: Section;
+  setActiveSection: (section: Section) => void;
+  onProjects: () => void;
+}) {
+  const items: Array<{ section: Section; label: string; icon: LucideIcon }> = [
+    { section: "overview", label: "Overview", icon: LayoutGrid },
+    { section: "website", label: "Edit", icon: FilePenLine },
+    { section: "view", label: "Preview", icon: MonitorCheck },
+    { section: "photos", label: "Photos", icon: ImageIcon },
+    { section: "leads", label: "Leads", icon: Users },
+    { section: "traffic", label: "Traffic", icon: BarChart3 },
+    { section: "billing", label: "Billing", icon: CreditCard },
+    { section: "settings", label: "Settings", icon: Settings },
+    { section: "support", label: "Support", icon: LifeBuoy }
+  ];
+
+  return (
+    <nav className="sticky top-20 z-20 border-b border-white/70 bg-white/82 px-3 py-2 shadow-[0_10px_24px_rgba(15,23,42,0.04)] backdrop-blur-2xl md:hidden">
+      <div className="flex gap-2 overflow-x-auto pb-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+        <button
+          type="button"
+          onClick={onProjects}
+          className="inline-flex shrink-0 items-center gap-2 rounded-full border border-white/70 bg-white px-3 py-2 text-xs font-bold text-muted-foreground shadow-sm"
+        >
+          <ChevronLeft className="size-3.5" />
+          Sites
+        </button>
+        {items.map((item) => {
+          const Icon = item.icon;
+          const active = activeSection === item.section || (item.section === "website" && ["business", "domain", "database", "templates"].includes(activeSection));
+
+          return (
+            <button
+              key={item.section}
+              type="button"
+              onClick={() => setActiveSection(item.section)}
+              className={cn(
+                "inline-flex shrink-0 items-center gap-2 rounded-full border px-3 py-2 text-xs font-bold shadow-sm transition",
+                active
+                  ? "border-foreground bg-foreground text-white"
+                  : "border-white/70 bg-white text-muted-foreground hover:text-foreground"
+              )}
+            >
+              <Icon className="size-3.5" />
+              {item.label}
+            </button>
+          );
+        })}
+      </div>
+    </nav>
+  );
 }
 
 function ProjectsHome({ data, siteUrl, onOpenProject }: { data: DashboardData; siteUrl: string | null; onOpenProject: (id: string) => void }) {
   const title = data.client.business_name ?? data.client.trading_name ?? "Website workspace";
+  const runtimeStatus = getRuntimeStatus(data.mode);
   const url = siteUrl ? new URL(siteUrl).hostname : data.client.subdomain ? `${data.client.subdomain}.siterent.co.za` : "Not published";
   const template = data.client.template_style && data.client.template_style in TEMPLATE_STYLES
     ? TEMPLATE_STYLES[data.client.template_style as keyof typeof TEMPLATE_STYLES]
@@ -454,7 +531,7 @@ function ProjectsHome({ data, siteUrl, onOpenProject }: { data: DashboardData; s
               <p className="mt-3 max-w-2xl text-sm leading-6 text-muted-foreground">Manage website previews, content, design, media, tracking, billing, and launch readiness from one clean workspace.</p>
               <div className="mt-6 flex flex-wrap gap-2">
                 <StatusPill tone={data.client.site_published ? "good" : "warn"} icon={RadioTower} label={data.client.site_published ? "Live website" : "Draft website"} />
-                <StatusPill tone={data.mode === "supabase" ? "good" : "warn"} icon={Server} label={data.mode === "supabase" ? "Supabase connected" : "Production setup required"} />
+                <StatusPill tone={runtimeStatus.tone} icon={Server} label={runtimeStatus.label} />
               </div>
             </div>
             <div className="rounded-2xl border border-white/70 bg-white/72 p-5 shadow-sm">
@@ -642,7 +719,7 @@ function ProjectWorkspace({
   }, [setActiveSection]);
 
   if (activeSection === "view") {
-    return <ViewSitePanel data={data} siteUrl={siteUrl} />;
+    return <ViewSitePanel data={data} siteUrl={siteUrl} onBack={() => setActiveSection("overview")} />;
   }
 
   return (
@@ -848,8 +925,8 @@ function TopPagesPanel({ analytics }: { analytics: CustomerAnalytics }) {
   return (
     <section className="rounded-[24px] border border-white/74 bg-white/62 p-5 shadow-[0_22px_60px_rgba(15,23,42,0.08)] ring-1 ring-white/70 backdrop-blur-2xl">
       <PanelTitle title="Top Pages" subtitle="Which pages visitors use before enquiring" />
-      <div className="mt-5 overflow-hidden rounded-2xl border border-white/70 bg-white/52 shadow-sm backdrop-blur-xl">
-        <table className="w-full text-left text-sm">
+      <div className="mt-5 overflow-x-auto rounded-2xl border border-white/70 bg-white/52 shadow-sm backdrop-blur-xl">
+        <table className="w-full min-w-[560px] text-left text-sm">
           <thead className="bg-secondary text-xs font-semibold uppercase tracking-[0.12em] text-muted-foreground">
             <tr>
               <th className="px-4 py-3">Page</th>
@@ -975,8 +1052,8 @@ function DomainPanel({ data, siteUrl }: { data: DashboardData; siteUrl: string |
       <section className="grid gap-6 xl:grid-cols-[1fr_420px]">
         <div className="rounded-[24px] border border-white/74 bg-white/72 p-6 shadow-[0_22px_60px_rgba(15,23,42,0.08)] ring-1 ring-white/70 backdrop-blur-2xl">
           <PanelTitle title="DNS records" subtitle="Records needed when a domain is connected manually." />
-          <div className="mt-5 overflow-hidden rounded-2xl border border-border bg-white">
-            <table className="w-full text-left text-sm">
+          <div className="mt-5 overflow-x-auto rounded-2xl border border-border bg-white">
+            <table className="w-full min-w-[640px] text-left text-sm">
               <thead className="bg-secondary text-xs font-bold uppercase tracking-[0.12em] text-muted-foreground">
                 <tr><th className="px-4 py-3">Type</th><th className="px-4 py-3">Host</th><th className="px-4 py-3">Value</th><th className="px-4 py-3">Status</th></tr>
               </thead>
@@ -1018,12 +1095,13 @@ function DomainPanel({ data, siteUrl }: { data: DashboardData; siteUrl: string |
 
 function DatabasePanel({ data }: { data: DashboardData }) {
   const records: Array<{ type: string; name: string; source: string; date: string; status: string }> = [];
+  const runtimeStatus = getRuntimeStatus(data.mode);
 
   return (
     <section className="rounded-[24px] border border-white/74 bg-white/72 p-6 shadow-[0_22px_60px_rgba(15,23,42,0.08)] ring-1 ring-white/70 backdrop-blur-2xl">
       <div className="flex flex-wrap items-start justify-between gap-4">
         <PanelTitle title="Website database" subtitle="Stored records captured through forms, uploads, and website events." />
-        <StatusPill tone={data.mode === "supabase" ? "good" : "warn"} icon={Database} label={data.mode === "supabase" ? "Supabase connected" : "Production setup required"} />
+        <StatusPill tone={runtimeStatus.tone} icon={Database} label={runtimeStatus.label} />
       </div>
       <div className="mt-6 grid gap-4 md:grid-cols-4">
         <MetricCard title="Form entries" value="0" change="Awaiting submissions" changeType="neutral" icon={FileText} />
@@ -1031,8 +1109,8 @@ function DatabasePanel({ data }: { data: DashboardData }) {
         <MetricCard title="Contacts" value="0" change="Awaiting capture" changeType="neutral" icon={Users} />
         <MetricCard title="Storage" value="0%" change="Used" changeType="neutral" icon={HardDrive} />
       </div>
-      <div className="mt-6 overflow-hidden rounded-2xl border border-border bg-white">
-        <table className="w-full text-left text-sm">
+      <div className="mt-6 overflow-x-auto rounded-2xl border border-border bg-white">
+        <table className="w-full min-w-[640px] text-left text-sm">
           <thead className="bg-secondary text-xs font-bold uppercase tracking-[0.12em] text-muted-foreground">
             <tr><th className="px-4 py-3">Record</th><th className="px-4 py-3">Source</th><th className="px-4 py-3">Date</th><th className="px-4 py-3">Status</th></tr>
           </thead>
@@ -1082,6 +1160,7 @@ function ControlCenterHeader({ data, siteUrl }: { data: DashboardData; siteUrl: 
   const publishedAt = data.client.published_at ? new Date(data.client.published_at).toLocaleString("en-ZA") : "Not published";
   const leadFormReady = Boolean(data.client.phone || data.client.email || data.client.whatsapp);
   const trackingReady = Boolean(data.client.ga_measurement_id || data.client.pixel_id);
+  const runtimeStatus = getRuntimeStatus(data.mode);
 
   return (
     <section className="overflow-hidden rounded-[24px] border border-white/74 bg-white/62 shadow-[0_22px_60px_rgba(15,23,42,0.08)] ring-1 ring-white/70 backdrop-blur-2xl">
@@ -1089,7 +1168,7 @@ function ControlCenterHeader({ data, siteUrl }: { data: DashboardData; siteUrl: 
         <div className="p-7 md:p-8">
           <div className="flex flex-wrap items-center gap-2">
             <StatusPill tone={data.client.site_published ? "good" : "warn"} icon={RadioTower} label={data.client.site_published ? "Live service" : "Draft mode"} />
-            <StatusPill tone={data.mode === "supabase" ? "good" : "warn"} icon={Server} label={data.mode === "supabase" ? "Supabase connected" : "Production setup required"} />
+            <StatusPill tone={runtimeStatus.tone} icon={Server} label={runtimeStatus.label} />
             <StatusPill tone={data.client.subscription_status === "active" ? "good" : "warn"} icon={ShieldCheck} label={data.client.subscription_status.replace(/_/g, " ")} />
           </div>
           <h2 className="mt-5 text-3xl font-bold tracking-tight text-foreground md:text-4xl">
@@ -1121,7 +1200,7 @@ function ControlCenterHeader({ data, siteUrl }: { data: DashboardData; siteUrl: 
   );
 }
 
-function ViewSitePanel({ data, siteUrl }: { data: DashboardData; siteUrl: string | null }) {
+function ViewSitePanel({ data, siteUrl, onBack }: { data: DashboardData; siteUrl: string | null; onBack: () => void }) {
   const [device, setDevice] = useState<"desktop" | "tablet" | "mobile">("desktop");
   const title = data.client.business_name ?? data.client.trading_name ?? "Unpublished website";
   const url = siteUrl ? new URL(siteUrl).hostname : data.client.subdomain ? `${data.client.subdomain}.siterent.co.za` : "Not published";
@@ -1138,9 +1217,9 @@ function ViewSitePanel({ data, siteUrl }: { data: DashboardData; siteUrl: string
       <div className="flex min-h-0 min-w-0 flex-col overflow-hidden">
         <div className="flex min-h-16 flex-wrap items-center justify-between gap-3 border-b border-white/70 bg-white/72 px-5 py-3 shadow-[0_10px_30px_rgba(15,23,42,0.04)] backdrop-blur-2xl">
           <div className="flex min-w-0 items-center gap-3">
-            <span className="grid size-10 place-items-center rounded-xl bg-blue-50 text-blue-700 shadow-sm">
-              <Eye className="size-5" />
-            </span>
+            <button type="button" onClick={onBack} className="grid size-10 shrink-0 place-items-center rounded-xl bg-blue-50 text-blue-700 shadow-sm transition hover:bg-blue-100" aria-label="Back to dashboard overview">
+              <ChevronLeft className="size-5" />
+            </button>
             <div className="min-w-0">
               <p className="text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground">Website Preview</p>
               <h2 className="truncate text-base font-semibold tracking-tight text-foreground md:text-lg">{title}</h2>
@@ -1221,7 +1300,7 @@ function dashboardClientToPreviewSite(data: DashboardData): ClientSite {
     tagline: data.client.tagline ?? "Add a production tagline in website settings.",
     ownerName: "Business owner",
     yearFounded: new Date().getFullYear(),
-    businessTypes: ["HVAC"],
+    businessTypes: ["Service"],
     jobsCompleted: 0,
     aboutText: "Add the production about section in website settings before publishing.",
     services: [],
@@ -1361,7 +1440,7 @@ function WebsiteAssistantPanel({ data, previewPath, url }: { data: DashboardData
   }
 
   return (
-    <aside className="flex h-dvh flex-col overflow-hidden border-l border-white/70 bg-white/72 text-foreground shadow-[0_10px_40px_rgba(15,23,42,0.06)] backdrop-blur-2xl">
+    <aside className="hidden h-dvh flex-col overflow-hidden border-l border-white/70 bg-white/72 text-foreground shadow-[0_10px_40px_rgba(15,23,42,0.06)] backdrop-blur-2xl xl:flex">
       <div className="border-b border-white/70 p-5">
         <div className="flex items-start gap-3">
           <div className="grid size-11 place-items-center rounded-2xl bg-blue-50 text-blue-700 shadow-sm">
@@ -1720,13 +1799,13 @@ function SettingsPanel({ data }: { data: DashboardData }) {
   }
 
   return (
-    <section className="grid h-[calc(100vh-5rem)] grid-rows-[auto_auto_minmax(0,1fr)] overflow-hidden border border-[#e5e7eb] bg-white shadow-[0_24px_70px_rgba(15,23,42,0.08)]">
-      <div className="border-b border-[#e5e7eb] px-8 py-5">
+    <section className="grid min-h-[calc(100vh-5rem)] grid-rows-[auto_auto_minmax(0,1fr)] overflow-hidden border border-[#e5e7eb] bg-white shadow-[0_24px_70px_rgba(15,23,42,0.08)] md:h-[calc(100vh-5rem)]">
+      <div className="border-b border-[#e5e7eb] px-4 py-4 md:px-8 md:py-5">
         <h2 className="text-2xl font-bold tracking-tight text-foreground">Settings</h2>
         <p className="mt-1 text-sm text-muted-foreground">Manage account, website, domain, tracking, and billing without leaving this fixed workspace.</p>
       </div>
 
-      <div className="px-8 pt-4">
+      <div className="px-4 pt-4 md:px-8">
         <div className="grid grid-cols-2 rounded-sm bg-[#fbfbfc] text-sm text-muted-foreground md:grid-cols-4 xl:grid-cols-7">
           {tabs.map((tab) => (
             <button
@@ -1741,7 +1820,7 @@ function SettingsPanel({ data }: { data: DashboardData }) {
         </div>
       </div>
 
-      <form action={onSaveSettings} className="min-h-0 overflow-hidden px-8 py-5">
+      <form action={onSaveSettings} className="min-h-0 overflow-y-auto px-4 py-5 md:px-8">
         {activeTab === "profile" && (
           <SettingsSection title="Profile" subtitle="Basic workspace owner details.">
             <SettingsInput name="businessName" label="Display name" defaultValue={data.client.business_name ?? data.client.trading_name ?? ""} />
@@ -1896,8 +1975,8 @@ function ReadOnlySetting({ label, value, wide }: { label: string; value: string;
 
 function SettingsMiniTable({ rows }: { rows: string[][] }) {
   return (
-    <div className="overflow-hidden rounded-md border border-[#e5e7eb]">
-      <table className="w-full text-left text-sm">
+    <div className="overflow-x-auto rounded-md border border-[#e5e7eb]">
+      <table className="w-full min-w-[520px] text-left text-sm">
         <tbody>
           {rows.map((row) => (
             <tr key={row.join("-")} className="border-b border-[#e5e7eb] last:border-b-0">
@@ -1915,7 +1994,7 @@ function SettingsBillingHistory({ invoices }: { invoices: { invoice: string; dat
     <div>
       <h3 className="text-lg font-semibold text-foreground">Billing History</h3>
       <p className="mt-1 text-sm text-muted-foreground">See the transactions you made.</p>
-      <div className="mt-5 overflow-hidden rounded-md border border-[#e5e7eb]">
+      <div className="mt-5 overflow-x-auto rounded-md border border-[#e5e7eb]">
         <table className="w-full min-w-[780px] text-left text-sm">
           <thead className="bg-[#f5f7f9] text-muted-foreground">
             <tr>
@@ -2099,9 +2178,9 @@ function TemplatePreview() {
         </div>
         <div className="grid min-h-[300px] gap-4 p-5 md:grid-cols-[1fr_0.75fr]">
           <div className="self-center">
-            <p className="text-xs font-bold uppercase tracking-[0.16em] text-white/70">Perfect temperature, every time</p>
-            <h3 className="mt-3 max-w-sm text-4xl font-black leading-tight">Your trusted HVAC experts keeping you comfortable</h3>
-            <p className="mt-4 text-sm leading-6 text-white/75">Fast air-conditioning repairs, installs, and maintenance.</p>
+            <p className="text-xs font-bold uppercase tracking-[0.16em] text-white/70">Local service, every time</p>
+            <h3 className="mt-3 max-w-sm text-4xl font-black leading-tight">Your trusted service experts, ready to help</h3>
+            <p className="mt-4 text-sm leading-6 text-white/75">Fast services, clear proof, and simple booking routes.</p>
             <div className="mt-5 flex gap-2">
               <span className="rounded-md bg-[#ff5b18] px-4 py-2 text-xs font-bold">Schedule service</span>
               <span className="rounded-md border border-white/60 px-4 py-2 text-xs font-bold">Learn more</span>

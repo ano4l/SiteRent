@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { getMissingSupabaseServiceConfig, hasSupabaseBrowserConfig, productionConfigError } from "@/lib/env";
+import { getMissingSupabaseServiceConfig, hasSupabaseBrowserConfig, isWaasTestMode, productionConfigError } from "@/lib/env";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { slugifySubdomain } from "@/lib/utils";
@@ -50,6 +50,14 @@ export async function POST(request: Request) {
   const extension = (file.name.includes(".") ? file.name.split(".").pop() : "bin")
     ?.toLowerCase()
     .replace(/[^a-z0-9]/g, "") || "bin";
+
+  if (isWaasTestMode()) {
+    return NextResponse.json({
+      ok: true,
+      mode: "test",
+      url: `/icon.svg?testUpload=${Date.now()}-${safeName}.${extension}`
+    });
+  }
 
   if (!supabase) {
     return NextResponse.json(

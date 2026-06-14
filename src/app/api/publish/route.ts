@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { getCustomDomainInstructions, getSiteUrl, isValidSubdomain, PLATFORM_DOMAIN } from "@/lib/domains";
 import { queuePublishConfirmationEmail } from "@/lib/email/publish-confirmation";
-import { getMissingSupabaseServiceConfig, hasSupabaseBrowserConfig, productionConfigError } from "@/lib/env";
+import { getMissingSupabaseServiceConfig, hasSupabaseBrowserConfig, isWaasTestMode, productionConfigError } from "@/lib/env";
 import { getAuthenticatedUserId } from "@/lib/client-auth";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { addDomainToVercelProject } from "@/lib/vercel";
@@ -12,6 +12,7 @@ const publishSchema = z.object({
   clientId: z.string().uuid(),
   subdomain: z.string().min(3).max(63),
   customDomain: z.string().optional(),
+  visualDirection: z.string().max(2000).optional(),
   acceptedTerms: z.literal(true)
 });
 
@@ -25,6 +26,28 @@ export async function POST(request: Request) {
   const subdomain = slugifySubdomain(payload.data.subdomain);
   if (!isValidSubdomain(subdomain)) {
     return NextResponse.json({ error: "Invalid or reserved subdomain" }, { status: 400 });
+  }
+
+  if (isWaasTestMode()) {
+    const customDomain = payload.data.customDomain?.trim() || null;
+    return NextResponse.json({
+      ok: true,
+      mode: "test",
+      siteUrl: getSiteUrl(subdomain),
+      dashboardUrl: "/dashboard",
+      customDomain,
+      customDomainInstructions: customDomain ? getCustomDomainInstructions(customDomain) : null,
+      vercelDomain: {
+        configured: false,
+        skippedReason: "Test mode: Vercel domain registration was skipped."
+      },
+      email: {
+        queued: false,
+        dashboardUrl: "/dashboard",
+        buttonLabel: "Open dashboard",
+        skippedReason: "Test mode: Gemini website-ready email was simulated but not sent."
+      }
+    });
   }
 
   const supabase = createSupabaseAdminClient();
@@ -108,7 +131,9 @@ export async function POST(request: Request) {
     payload: {
       site_url: siteUrl,
       custom_domain: customDomain,
-      platform_domain: PLATFORM_DOMAIN
+      platform_domain: PLATFORM_DOMAIN,
+      visual_direction: payload.data.visualDirection ?? null,
+      gemini_build_status: "ready_for_generation"
     }
   });
 
@@ -128,7 +153,8 @@ export async function POST(request: Request) {
     businessName,
     recipient: clientEmail,
     siteUrl,
-    dashboardUrl: "/dashboard"
+    dashboardUrl: "/dashboard",
+    visualDirection: payload.data.visualDirection
   });
 
   return NextResponse.json({
