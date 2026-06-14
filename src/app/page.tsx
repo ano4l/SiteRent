@@ -97,6 +97,10 @@ export default function HomePage() {
                 Start onboarding
                 <ArrowRight className="size-4" />
               </Link>
+              <Link href="/onboarding?demo=1" className="inline-flex items-center gap-2 rounded-xl border border-app-line bg-white px-5 py-3.5 text-sm font-bold text-foreground transition hover:border-app-line-strong">
+                Try the demo
+                <MonitorCheck className="size-4" />
+              </Link>
             </div>
             <div className="mt-8 grid gap-3 text-sm font-semibold text-muted-foreground sm:grid-cols-3">
               <TrustItem icon={Clock3} label="Fast setup" />

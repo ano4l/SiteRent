@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { ArrowLeft, ArrowRight, Check, CheckCircle2, Clock, Globe2, ImageIcon, LockKeyhole, MonitorCheck, Rocket, Sparkles, Upload } from "lucide-react";
-import { BRAND_COLOURS, INDUSTRY_TEMPLATES, ONBOARDING_STEPS, RESPONSE_TIMES, SERVICE_CATALOG, TEMPLATE_STYLES, WEEK_DAYS } from "@/lib/constants";
+import { BRAND_COLOURS, DEMO_BUSINESSES, INDUSTRY_TEMPLATES, ONBOARDING_STEPS, RESPONSE_TIMES, SERVICE_CATALOG, TEMPLATE_STYLES, WEEK_DAYS } from "@/lib/constants";
 import { TEST_CLIENT_ID } from "@/lib/test-data";
 import type { TemplateStyle } from "@/lib/types";
 import { cn, slugifySubdomain } from "@/lib/utils";
@@ -143,51 +143,6 @@ const initialState: FormState = {
   terms: false
 };
 
-const demoState: FormState = {
-  ...initialState,
-  businessType: "electrician",
-  tradingName: "BrightSpark Electricians",
-  tagline: "Safe electrical repairs, installations, and compliance support across Cape Town.",
-  ownerName: "Sam Rivera",
-  yearFounded: "2018",
-  jobsCompleted: "640+",
-  aboutText: "BrightSpark Electricians helps homeowners, landlords, and small businesses with dependable electrical fault finding, upgrades, lighting, and compliance-ready work.",
-  services: ["fault-finding", "db-board-upgrades", "lighting-installation", "electrical-compliance"],
-  servicePrices: {
-    "fault-finding": "550",
-    "db-board-upgrades": "1800",
-    "lighting-installation": "450",
-    "electrical-compliance": "1200"
-  },
-  certifications: "Qualified electrician, insured workmanship",
-  hasGuarantee: true,
-  guaranteePeriod: "12 months",
-  hasEmergency: true,
-  primaryCity: "Cape Town",
-  address: "12 Bree Street, Cape Town",
-  suburbs: "Sea Point, Claremont, Gardens, Durbanville, Bellville",
-  testimonials: [
-    { name: "Nadia K.", suburb: "Claremont", quote: "They arrived the same day and had our office power stable before lunch." },
-    { name: "Thabo M.", suburb: "Sea Point", quote: "Clear pricing, neat work, and a friendly team." },
-    { name: "Ruan P.", suburb: "Durbanville", quote: "The maintenance plan has saved us from two breakdowns already." }
-  ],
-  phone: "+27 21 555 0198",
-  whatsapp: "+27 82 555 0198",
-  email: "hello@brightspark.example",
-  facebookUrl: "https://facebook.com/brightsparkelectricians",
-  instagramUrl: "https://instagram.com/brightsparkelectricians",
-  pixelId: "1234567890",
-  visualDirection: "Modern, trustworthy, mobile-first, with safety proof above the contact form and a direct call CTA.",
-  templateStyle: "razor-minimal",
-  brandColour: "amber",
-  logoUrl: "/window.svg",
-  heroPhotoUrl: "/globe.svg",
-  ownerPhotoUrl: "/file.svg",
-  subdomain: "brightspark-electricians",
-  customDomain: "brightsparkelectricians.co.za",
-  terms: true
-};
-
 const localStorageKey = "siterent-onboarding-v2";
 const legacyLocalStorageKeys = ["siterent-onboarding-v1"];
 const publishResultStorageKey = "siterent-last-publish-result";
@@ -275,6 +230,57 @@ function formFromAiDraft(draft: AiBuilderDraft, current: FormState): FormState {
   };
 }
 
+function suggestedServicePrices(serviceKeys: readonly string[], existing: Record<string, string> = {}) {
+  const prices: Record<string, string> = {};
+  for (const key of serviceKeys) {
+    if (existing[key]) {
+      prices[key] = existing[key];
+      continue;
+    }
+    const service = SERVICE_CATALOG.find((item) => item.key === key);
+    prices[key] = service ? String(service.startingPrice) : "";
+  }
+  return prices;
+}
+
+function buildDemoForm(key: IndustryTemplate, current: FormState): FormState {
+  const template = INDUSTRY_TEMPLATES[key];
+  const demo = DEMO_BUSINESSES[key];
+  const serviceKeys = [...template.serviceKeys];
+
+  return {
+    ...current,
+    businessType: key,
+    tradingName: demo.tradingName,
+    tagline: template.defaultTagline,
+    ownerName: demo.ownerName,
+    yearFounded: demo.yearFounded,
+    jobsCompleted: demo.jobsCompleted,
+    aboutText: template.defaultAbout,
+    services: serviceKeys,
+    servicePrices: suggestedServicePrices(serviceKeys),
+    customServices: [],
+    certifications: template.defaultCertifications,
+    isInsured: true,
+    hasGuarantee: demo.hasGuarantee,
+    guaranteePeriod: demo.guaranteePeriod,
+    hasEmergency: demo.hasEmergency,
+    offersFreeQuote: true,
+    primaryCity: demo.primaryCity,
+    address: demo.address,
+    suburbs: demo.suburbs,
+    testimonials: demo.testimonials.map((item) => ({ ...item })),
+    phone: demo.phone,
+    whatsapp: demo.whatsapp,
+    email: demo.email,
+    responseTime: demo.responseTime,
+    visualDirection: demo.visualDirection,
+    templateStyle: template.defaultTemplateStyle,
+    brandColour: template.defaultBrandColour,
+    subdomain: slugifySubdomain(demo.tradingName)
+  };
+}
+
 export default function OnboardingPage() {
   const [step, setStep] = useState(0);
   const [form, setForm] = useState<FormState>(initialState);
@@ -284,6 +290,7 @@ export default function OnboardingPage() {
   const [paymentStatus, setPaymentStatus] = useState<"idle" | "starting" | "redirecting" | "local" | "error">("idle");
   const [publishStatus, setPublishStatus] = useState<"idle" | "publishing" | "error">("idle");
   const [subdomainStatus, setSubdomainStatus] = useState<"idle" | "checking" | "available" | "taken" | "invalid">("idle");
+  const [isDemo, setIsDemo] = useState(false);
 
   const percent = Math.round(((step + 1) / ONBOARDING_STEPS.length) * 100);
   const theme = BRAND_COLOURS[form.brandColour];
@@ -348,10 +355,15 @@ export default function OnboardingPage() {
     }
 
     if (demoMode) {
-      setForm(demoState);
-      setSaveStatus("saved");
-      window.localStorage.setItem(localStorageKey, JSON.stringify({ form: demoState, step: 0, clientId: TEST_CLIENT_ID }));
-      setClientId(TEST_CLIENT_ID);
+      setIsDemo(true);
+      setClientId((current) => current ?? TEST_CLIENT_ID);
+      // Start a clean demo session at the niche picker unless the user already
+      // has saved demo progress (so a refresh does not wipe their choices).
+      if (!window.localStorage.getItem(localStorageKey)) {
+        setForm(initialState);
+        setStep(0);
+        setSaveStatus("idle");
+      }
     }
     if (requestedTemplate && requestedTemplate in TEMPLATE_STYLES) {
       update("templateStyle", requestedTemplate as TemplateStyle);
@@ -405,6 +417,10 @@ export default function OnboardingPage() {
   }
 
   function applyIndustryTemplate(key: IndustryTemplate) {
+    if (isDemo) {
+      setForm((current) => buildDemoForm(key, current));
+      return;
+    }
     const template = INDUSTRY_TEMPLATES[key];
     setForm((current) => ({
       ...current,
@@ -415,7 +431,7 @@ export default function OnboardingPage() {
       certifications: current.certifications || template.defaultCertifications,
       templateStyle: template.defaultTemplateStyle,
       brandColour: template.defaultBrandColour,
-      servicePrices: Object.fromEntries(template.serviceKeys.map((serviceKey) => [serviceKey, current.servicePrices[serviceKey] ?? ""]))
+      servicePrices: suggestedServicePrices(template.serviceKeys, current.servicePrices)
     }));
   }
 
@@ -692,7 +708,15 @@ export default function OnboardingPage() {
             <OnboardingMomentum step={step} percent={percent} />
             {step === 0 && (
               <div className="space-y-4">
-                <StepTitle title="Business basics" copy="Choose the closest business type, then confirm the details Gemini should build around." />
+                <StepTitle title="Business basics" copy="Pick the closest business type to load a ready-made starter template, then edit any detail to match the business." />
+                {isDemo && (
+                  <div className="rounded-2xl border border-blue-200 bg-blue-50 p-4 text-sm text-blue-900">
+                    <p className="font-bold">Demo mode</p>
+                    <p className="mt-1 leading-6">
+                      Choose any niche below to instantly fill a realistic sample business — name, services, pricing, proof, and contact details — that you can edit anywhere before previewing.
+                    </p>
+                  </div>
+                )}
                 <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
                   {(Object.entries(INDUSTRY_TEMPLATES) as Array<[IndustryTemplate, (typeof INDUSTRY_TEMPLATES)[IndustryTemplate]]>).map(([key, template]) => (
                     <button
@@ -835,7 +859,7 @@ export default function OnboardingPage() {
 
             {step === 2 && (
               <div className="space-y-5">
-                <StepTitle title="Website look and notes" copy="Choose the visual direction and add notes for Gemini before the final website build." />
+                <StepTitle title="Website look and notes" copy="Choose the visual direction and add any notes that shape the website. These guide the AI build once connected." />
                 <div className="grid gap-3 md:grid-cols-2">
                   {Object.entries(TEMPLATE_STYLES).map(([key, style]) => (
                     <button
@@ -864,7 +888,7 @@ export default function OnboardingPage() {
                   <UploadField label="Hero photo" uploadType="hero" value={form.heroPhotoUrl} clientId={clientId} onUploaded={(url) => update("heroPhotoUrl", url)} />
                   <UploadField label="Owner photo" uploadType="owner" value={form.ownerPhotoUrl} clientId={clientId} onUploaded={(url) => update("ownerPhotoUrl", url)} />
                 </div>
-                <TextArea label="Notes for Gemini" value={form.visualDirection} onChange={(value) => update("visualDirection", value)} />
+                <TextArea label="Website notes (used for AI build)" value={form.visualDirection} onChange={(value) => update("visualDirection", value)} />
                 <StepTitle title="Brand colour" copy="This still controls small accents in the dashboard and generated metadata." />
                 <div className="grid gap-3 sm:grid-cols-3">
                   {Object.entries(BRAND_COLOURS).map(([key, colour]) => (

@@ -753,7 +753,7 @@ function EmptyWebsiteState() {
         <div className="mt-6 flex flex-wrap justify-center gap-3">
           <Link href="/builder" className="inline-flex items-center gap-2 rounded-lg bg-accent px-5 py-3 text-sm font-bold text-accent-foreground"><Wand2 className="size-4" /> Build with AI</Link>
           <Link href="/onboarding" className="inline-flex items-center gap-2 rounded-lg bg-accent px-5 py-3 text-sm font-bold text-accent-foreground"><Plus className="size-4" /> Create website</Link>
-          <Link href="/login" className="inline-flex items-center gap-2 rounded-lg border border-border bg-secondary px-5 py-3 text-sm font-bold text-foreground">Back to auth</Link>
+          <Link href="/onboarding?demo=1" className="inline-flex items-center gap-2 rounded-lg border border-border bg-secondary px-5 py-3 text-sm font-bold text-foreground"><MonitorCheck className="size-4" /> Demo onboarding</Link>
         </div>
       </section>
     </div>

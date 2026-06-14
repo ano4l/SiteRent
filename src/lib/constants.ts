@@ -178,207 +178,248 @@ export const SERVICE_CATALOG = [
   {
     key: "aircon-installation",
     label: "Aircon installation",
-    description: "New split-unit and commercial air-conditioning installations."
+    description: "New split-unit and commercial air-conditioning installations.",
+    startingPrice: 4500
   },
   {
     key: "aircon-repairs",
     label: "Aircon repairs",
-    description: "Fault finding, repairs, regassing, and urgent breakdown support."
+    description: "Fault finding, repairs, regassing, and urgent breakdown support.",
+    startingPrice: 650
   },
   {
     key: "maintenance",
     label: "Maintenance plans",
-    description: "Scheduled cleaning, filter checks, and preventive maintenance."
+    description: "Scheduled cleaning, filter checks, and preventive maintenance.",
+    startingPrice: 450
   },
   {
     key: "ducting",
     label: "Ducting and ventilation",
-    description: "Ventilation, extractor, and ducting work for homes and businesses."
+    description: "Ventilation, extractor, and ducting work for homes and businesses.",
+    startingPrice: 1800
   },
   {
     key: "plumbing",
     label: "Plumbing support",
-    description: "General plumbing support where offered by the contractor."
+    description: "General plumbing support where offered by the contractor.",
+    startingPrice: 550
   },
   {
     key: "leak-repairs",
     label: "Leak repairs",
-    description: "Trace leaks, repair pipework, and stop recurring water damage."
+    description: "Trace leaks, repair pipework, and stop recurring water damage.",
+    startingPrice: 550
   },
   {
     key: "blocked-drains",
     label: "Blocked drains",
-    description: "Clear blocked sinks, toilets, showers, and stormwater lines."
+    description: "Clear blocked sinks, toilets, showers, and stormwater lines.",
+    startingPrice: 650
   },
   {
     key: "bathroom-plumbing",
     label: "Bathroom plumbing",
-    description: "Install and repair toilets, taps, basins, showers, and mixers."
+    description: "Install and repair toilets, taps, basins, showers, and mixers.",
+    startingPrice: 850
   },
   {
     key: "emergency-plumbing",
     label: "Emergency plumbing",
-    description: "Urgent plumbing call-outs for leaks, bursts, and breakdowns."
+    description: "Urgent plumbing call-outs for leaks, bursts, and breakdowns.",
+    startingPrice: 750
   },
   {
     key: "geyser-repairs",
     label: "Geyser repairs",
-    description: "Fix faulty elements, thermostats, leaks, pressure valves, and poor hot water."
+    description: "Fix faulty elements, thermostats, leaks, pressure valves, and poor hot water.",
+    startingPrice: 750
   },
   {
     key: "geyser-installation",
     label: "Geyser installation",
-    description: "Replace and install electric geysers with compliant fittings."
+    description: "Replace and install electric geysers with compliant fittings.",
+    startingPrice: 2800
   },
   {
     key: "burst-geysers",
     label: "Burst geysers",
-    description: "Rapid response for burst geysers, leaks, and water damage risk."
+    description: "Rapid response for burst geysers, leaks, and water damage risk.",
+    startingPrice: 950
   },
   {
     key: "valve-replacement",
     label: "Valve replacement",
-    description: "Replace pressure, safety, vacuum breaker, and shut-off valves."
+    description: "Replace pressure, safety, vacuum breaker, and shut-off valves.",
+    startingPrice: 550
   },
   {
     key: "fault-finding",
     label: "Fault finding",
-    description: "Diagnose tripping circuits, faulty plugs, lights, and intermittent electrical issues."
+    description: "Diagnose tripping circuits, faulty plugs, lights, and intermittent electrical issues.",
+    startingPrice: 550
   },
   {
     key: "db-board-upgrades",
     label: "DB board upgrades",
-    description: "Upgrade distribution boards, breakers, surge protection, and labeling."
+    description: "Upgrade distribution boards, breakers, surge protection, and labeling.",
+    startingPrice: 1800
   },
   {
     key: "lighting-installation",
     label: "Lighting installation",
-    description: "Install indoor, outdoor, security, and energy-saving lighting."
+    description: "Install indoor, outdoor, security, and energy-saving lighting.",
+    startingPrice: 450
   },
   {
     key: "electrical-compliance",
     label: "Electrical compliance",
-    description: "Compliance checks, certificates, and remedial electrical work."
+    description: "Compliance checks, certificates, and remedial electrical work.",
+    startingPrice: 1200
   },
   {
     key: "lockouts",
     label: "Emergency lockouts",
-    description: "Help customers regain access to homes, offices, and shops."
+    description: "Help customers regain access to homes, offices, and shops.",
+    startingPrice: 450
   },
   {
     key: "lock-replacement",
     label: "Lock replacement",
-    description: "Replace damaged, worn, or insecure door and gate locks."
+    description: "Replace damaged, worn, or insecure door and gate locks.",
+    startingPrice: 550
   },
   {
     key: "rekeying",
     label: "Rekeying",
-    description: "Change lock keys without replacing the full lock hardware."
+    description: "Change lock keys without replacing the full lock hardware.",
+    startingPrice: 350
   },
   {
     key: "security-locks",
     label: "Security locks",
-    description: "Install higher-security locks, cylinders, and access hardware."
+    description: "Install higher-security locks, cylinders, and access hardware.",
+    startingPrice: 850
   },
   {
     key: "cockroach-treatment",
     label: "Cockroach treatment",
-    description: "Targeted treatment for kitchens, cupboards, and recurring infestations."
+    description: "Targeted treatment for kitchens, cupboards, and recurring infestations.",
+    startingPrice: 450
   },
   {
     key: "rodent-control",
     label: "Rodent control",
-    description: "Inspection, baiting, sealing advice, and follow-up rodent treatment."
+    description: "Inspection, baiting, sealing advice, and follow-up rodent treatment.",
+    startingPrice: 550
   },
   {
     key: "termite-treatment",
     label: "Termite treatment",
-    description: "Termite inspections and treatment plans for affected properties."
+    description: "Termite inspections and treatment plans for affected properties.",
+    startingPrice: 1500
   },
   {
     key: "ant-control",
     label: "Ant control",
-    description: "Treat ants at entry points, nests, and high-activity areas."
+    description: "Treat ants at entry points, nests, and high-activity areas.",
+    startingPrice: 400
   },
   {
     key: "roof-leak-repairs",
     label: "Roof leak repairs",
-    description: "Find and repair leaks around flashing, tiles, sheets, and joins."
+    description: "Find and repair leaks around flashing, tiles, sheets, and joins.",
+    startingPrice: 850
   },
   {
     key: "roof-waterproofing",
     label: "Roof waterproofing",
-    description: "Waterproof flat roofs, parapets, joints, and problem areas."
+    description: "Waterproof flat roofs, parapets, joints, and problem areas.",
+    startingPrice: 2500
   },
   {
     key: "roof-inspection",
     label: "Roof inspection",
-    description: "Assess roofs before rain, sale, maintenance, or insurance work."
+    description: "Assess roofs before rain, sale, maintenance, or insurance work.",
+    startingPrice: 650
   },
   {
     key: "gutter-repairs",
     label: "Gutter repairs",
-    description: "Clean, repair, seal, and align gutters and downpipes."
+    description: "Clean, repair, seal, and align gutters and downpipes.",
+    startingPrice: 750
   },
   {
     key: "solar-installation",
     label: "Solar installation",
-    description: "Install solar panels, inverters, and backup power systems."
+    description: "Install solar panels, inverters, and backup power systems.",
+    startingPrice: 35000
   },
   {
     key: "inverter-backup",
     label: "Inverter backup",
-    description: "Backup power systems for lights, Wi-Fi, security, and essentials."
+    description: "Backup power systems for lights, Wi-Fi, security, and essentials.",
+    startingPrice: 18000
   },
   {
     key: "battery-storage",
     label: "Battery storage",
-    description: "Battery upgrades, sizing advice, and backup runtime planning."
+    description: "Battery upgrades, sizing advice, and backup runtime planning.",
+    startingPrice: 22000
   },
   {
     key: "solar-maintenance",
     label: "Solar maintenance",
-    description: "Inspect, clean, monitor, and maintain solar and inverter systems."
+    description: "Inspect, clean, monitor, and maintain solar and inverter systems.",
+    startingPrice: 950
   },
   {
     key: "haircuts",
     label: "Haircuts",
-    description: "Classic and modern cuts with easy appointment booking."
+    description: "Classic and modern cuts with easy appointment booking.",
+    startingPrice: 150
   },
   {
     key: "fades",
     label: "Fades",
-    description: "Skin fades, taper fades, and detailed finishing."
+    description: "Skin fades, taper fades, and detailed finishing.",
+    startingPrice: 180
   },
   {
     key: "beard-trims",
     label: "Beard trims",
-    description: "Beard shaping, trimming, and grooming services."
+    description: "Beard shaping, trimming, and grooming services.",
+    startingPrice: 90
   },
   {
     key: "kids-cuts",
     label: "Kids cuts",
-    description: "Friendly haircut appointments for younger customers."
+    description: "Friendly haircut appointments for younger customers.",
+    startingPrice: 120
   },
   {
     key: "portrait-photography",
     label: "Portrait photography",
-    description: "Personal, family, team, and professional portrait sessions."
+    description: "Personal, family, team, and professional portrait sessions.",
+    startingPrice: 1200
   },
   {
     key: "event-photography",
     label: "Event photography",
-    description: "Capture parties, launches, corporate events, and celebrations."
+    description: "Capture parties, launches, corporate events, and celebrations.",
+    startingPrice: 3500
   },
   {
     key: "wedding-photography",
     label: "Wedding photography",
-    description: "Wedding coverage, couple portraits, and edited galleries."
+    description: "Wedding coverage, couple portraits, and edited galleries.",
+    startingPrice: 9500
   },
   {
     key: "product-photography",
     label: "Product photography",
-    description: "Clean product images for websites, ecommerce, and social campaigns."
+    description: "Clean product images for websites, ecommerce, and social campaigns.",
+    startingPrice: 1500
   }
 ] as const;
 
@@ -400,3 +441,248 @@ export const RESPONSE_TIMES = [
   "Same day",
   "Next business day"
 ] as const;
+
+export type DemoBusiness = {
+  tradingName: string;
+  ownerName: string;
+  yearFounded: string;
+  jobsCompleted: string;
+  primaryCity: string;
+  address: string;
+  suburbs: string;
+  phone: string;
+  whatsapp: string;
+  email: string;
+  responseTime: (typeof RESPONSE_TIMES)[number];
+  hasEmergency: boolean;
+  hasGuarantee: boolean;
+  guaranteePeriod: string;
+  visualDirection: string;
+  testimonials: { name: string; suburb: string; quote: string }[];
+};
+
+// Realistic, fully editable sample businesses used to populate the demo
+// onboarding flow per niche. These act as the starter template content while
+// Gemini generation is not yet connected.
+export const DEMO_BUSINESSES: Record<IndustryTemplateKey, DemoBusiness> = {
+  plumbers: {
+    tradingName: "FlowFix Plumbing",
+    ownerName: "Daniel Mokoena",
+    yearFounded: "2015",
+    jobsCompleted: "1 200+",
+    primaryCity: "Johannesburg",
+    address: "48 Rivonia Road, Sandton",
+    suburbs: "Sandton, Randburg, Fourways, Midrand, Bryanston",
+    phone: "+27 11 555 0142",
+    whatsapp: "+27 82 555 0142",
+    email: "hello@flowfix.example",
+    responseTime: "Within 1 hour",
+    hasEmergency: true,
+    hasGuarantee: true,
+    guaranteePeriod: "12 months",
+    visualDirection: "Clean, reassuring, mobile-first with a 24/7 emergency call CTA and clear up-front pricing.",
+    testimonials: [
+      { name: "Lerato D.", suburb: "Fourways", quote: "Found a hidden leak fast and stopped the damage the same morning." },
+      { name: "Pieter V.", suburb: "Randburg", quote: "Fair quote, neat work, and they cleaned up after themselves." },
+      { name: "Aisha M.", suburb: "Midrand", quote: "Sorted a blocked drain that two other plumbers gave up on." }
+    ]
+  },
+  "geyser-repair": {
+    tradingName: "HotWater Heroes",
+    ownerName: "Sipho Dlamini",
+    yearFounded: "2017",
+    jobsCompleted: "900+",
+    primaryCity: "Durban",
+    address: "21 Florida Road, Morningside",
+    suburbs: "Morningside, Umhlanga, Berea, Westville, Glenwood",
+    phone: "+27 31 555 0188",
+    whatsapp: "+27 83 555 0188",
+    email: "service@hotwaterheroes.example",
+    responseTime: "Within 1 hour",
+    hasEmergency: true,
+    hasGuarantee: true,
+    guaranteePeriod: "24 months",
+    visualDirection: "Trust-led blue layout with burst-geyser emergency CTA and insurance claim support messaging.",
+    testimonials: [
+      { name: "Nomsa K.", suburb: "Umhlanga", quote: "Burst geyser at 6am, they were there before 8 and handled the insurance paperwork." },
+      { name: "Rajesh P.", suburb: "Westville", quote: "Replaced our geyser quickly with a clear warranty." },
+      { name: "Megan S.", suburb: "Glenwood", quote: "Honest advice, no upselling, hot water restored same day." }
+    ]
+  },
+  electrician: {
+    tradingName: "BrightSpark Electricians",
+    ownerName: "Sam Rivera",
+    yearFounded: "2018",
+    jobsCompleted: "640+",
+    primaryCity: "Cape Town",
+    address: "12 Bree Street, Cape Town",
+    suburbs: "Sea Point, Claremont, Gardens, Durbanville, Bellville",
+    phone: "+27 21 555 0198",
+    whatsapp: "+27 82 555 0198",
+    email: "hello@brightspark.example",
+    responseTime: "Same day",
+    hasEmergency: true,
+    hasGuarantee: true,
+    guaranteePeriod: "12 months",
+    visualDirection: "Modern, trustworthy, mobile-first, with safety proof above the contact form and a direct call CTA.",
+    testimonials: [
+      { name: "Nadia K.", suburb: "Claremont", quote: "They arrived the same day and had our office power stable before lunch." },
+      { name: "Thabo M.", suburb: "Sea Point", quote: "Clear pricing, neat work, and a friendly team." },
+      { name: "Ruan P.", suburb: "Durbanville", quote: "The maintenance plan has saved us from two breakdowns already." }
+    ]
+  },
+  locksmiths: {
+    tradingName: "KeyGuard Locksmiths",
+    ownerName: "Marco Pereira",
+    yearFounded: "2016",
+    jobsCompleted: "2 000+",
+    primaryCity: "Pretoria",
+    address: "9 Park Street, Hatfield",
+    suburbs: "Hatfield, Brooklyn, Menlyn, Centurion, Lynnwood",
+    phone: "+27 12 555 0170",
+    whatsapp: "+27 84 555 0170",
+    email: "help@keyguard.example",
+    responseTime: "Within 30 minutes",
+    hasEmergency: true,
+    hasGuarantee: true,
+    guaranteePeriod: "6 months",
+    visualDirection: "Bold, security-focused dark layout with a prominent 24/7 lockout CTA and fast-response promise.",
+    testimonials: [
+      { name: "Chloe B.", suburb: "Brooklyn", quote: "Locked out at midnight and back inside within 25 minutes." },
+      { name: "Tebogo L.", suburb: "Centurion", quote: "Re-keyed our whole office without replacing a single lock. Saved us a fortune." },
+      { name: "Hannah W.", suburb: "Menlyn", quote: "Professional, vetted, and they explained every security option." }
+    ]
+  },
+  "pest-control": {
+    tradingName: "GreenShield Pest Control",
+    ownerName: "Thandi Nkosi",
+    yearFounded: "2014",
+    jobsCompleted: "3 500+",
+    primaryCity: "Johannesburg",
+    address: "77 Jan Smuts Avenue, Rosebank",
+    suburbs: "Rosebank, Parktown, Melville, Greenside, Linden",
+    phone: "+27 11 555 0125",
+    whatsapp: "+27 82 555 0125",
+    email: "bookings@greenshield.example",
+    responseTime: "Same day",
+    hasEmergency: false,
+    hasGuarantee: true,
+    guaranteePeriod: "3 months",
+    visualDirection: "Calm, clean editorial layout emphasising family- and pet-safe treatments with follow-up guarantee.",
+    testimonials: [
+      { name: "Vusi M.", suburb: "Melville", quote: "Cleared a stubborn cockroach problem and the follow-up was included." },
+      { name: "Sarah J.", suburb: "Greenside", quote: "Safe for our pets and kids, and the rodents are finally gone." },
+      { name: "Andre F.", suburb: "Linden", quote: "Thorough inspection, clear plan, no nasty surprises." }
+    ]
+  },
+  roofing: {
+    tradingName: "Apex Roofing & Waterproofing",
+    ownerName: "Johan Botha",
+    yearFounded: "2012",
+    jobsCompleted: "850+",
+    primaryCity: "Cape Town",
+    address: "5 Voortrekker Road, Bellville",
+    suburbs: "Bellville, Durbanville, Brackenfell, Kuils River, Parow",
+    phone: "+27 21 555 0156",
+    whatsapp: "+27 83 555 0156",
+    email: "quotes@apexroofing.example",
+    responseTime: "Same day",
+    hasEmergency: true,
+    hasGuarantee: true,
+    guaranteePeriod: "5 years",
+    visualDirection: "Strong, dependable layout with before/after proof, free inspection CTA, and a workmanship guarantee badge.",
+    testimonials: [
+      { name: "Elize K.", suburb: "Durbanville", quote: "Stopped a leak before the winter rains and waterproofed the whole roof." },
+      { name: "Sizwe N.", suburb: "Brackenfell", quote: "Detailed inspection report and honest pricing on the repair." },
+      { name: "Tom R.", suburb: "Parow", quote: "Five-year guarantee gave us real peace of mind." }
+    ]
+  },
+  hvac: {
+    tradingName: "CoolBreeze Air Conditioning",
+    ownerName: "Riaan van Wyk",
+    yearFounded: "2013",
+    jobsCompleted: "1 600+",
+    primaryCity: "Johannesburg",
+    address: "33 Main Reef Road, Roodepoort",
+    suburbs: "Roodepoort, Krugersdorp, Northcliff, Honeydew, Florida",
+    phone: "+27 11 555 0133",
+    whatsapp: "+27 82 555 0133",
+    email: "service@coolbreeze.example",
+    responseTime: "Same day",
+    hasEmergency: false,
+    hasGuarantee: true,
+    guaranteePeriod: "12 months",
+    visualDirection: "Polished corporate-blue layout with maintenance-plan upsell and SAQCC-registered trust signals.",
+    testimonials: [
+      { name: "Karabo M.", suburb: "Northcliff", quote: "Installed two split units cleanly and the rooms cool down in minutes." },
+      { name: "Dineo P.", suburb: "Honeydew", quote: "Annual service plan keeps our office comfortable all summer." },
+      { name: "Greg S.", suburb: "Florida", quote: "Quick repair, fair price, and they explained the fault clearly." }
+    ]
+  },
+  solar: {
+    tradingName: "SunPower Solar Solutions",
+    ownerName: "Naledi Sithole",
+    yearFounded: "2019",
+    jobsCompleted: "420+",
+    primaryCity: "Pretoria",
+    address: "14 Lynnwood Road, Lynnwood",
+    suburbs: "Lynnwood, Waterkloof, Faerie Glen, Garsfontein, Moreleta Park",
+    phone: "+27 12 555 0111",
+    whatsapp: "+27 84 555 0111",
+    email: "info@sunpower.example",
+    responseTime: "Next business day",
+    hasEmergency: false,
+    hasGuarantee: true,
+    guaranteePeriod: "10 years",
+    visualDirection: "Premium, savings-focused layout with backup-during-loadshedding messaging and a free site assessment CTA.",
+    testimonials: [
+      { name: "Willem D.", suburb: "Waterkloof", quote: "No more loadshedding stress, the backup kicks in seamlessly." },
+      { name: "Lindiwe Z.", suburb: "Garsfontein", quote: "Clear savings breakdown and a tidy, professional installation." },
+      { name: "Brian C.", suburb: "Moreleta Park", quote: "Sized our system perfectly, the batteries last right through outages." }
+    ]
+  },
+  barbers: {
+    tradingName: "Fade Lab Barbershop",
+    ownerName: "Junaid Adams",
+    yearFounded: "2020",
+    jobsCompleted: "8 000+",
+    primaryCity: "Cape Town",
+    address: "88 Long Street, Cape Town",
+    suburbs: "City Bowl, Woodstock, Observatory, Sea Point, Gardens",
+    phone: "+27 21 555 0144",
+    whatsapp: "+27 82 555 0144",
+    email: "book@fadelab.example",
+    responseTime: "Same day",
+    hasEmergency: false,
+    hasGuarantee: false,
+    guaranteePeriod: "12 months",
+    visualDirection: "Bold dark grooming aesthetic with easy online booking, gallery of cuts, and walk-in availability.",
+    testimonials: [
+      { name: "Kyle M.", suburb: "Woodstock", quote: "Best fade in the city, and booking online takes ten seconds." },
+      { name: "Sive N.", suburb: "Observatory", quote: "Consistent cut every single time, great vibe in the shop." },
+      { name: "Daniel P.", suburb: "Sea Point", quote: "Took my son for his first cut, super friendly and patient." }
+    ]
+  },
+  photographers: {
+    tradingName: "Lumen Studio Photography",
+    ownerName: "Aria Naidoo",
+    yearFounded: "2018",
+    jobsCompleted: "500+",
+    primaryCity: "Durban",
+    address: "3 Lighthouse Road, Umhlanga",
+    suburbs: "Umhlanga, Ballito, La Lucia, Durban North, Morningside",
+    phone: "+27 31 555 0166",
+    whatsapp: "+27 83 555 0166",
+    email: "studio@lumen.example",
+    responseTime: "Next business day",
+    hasEmergency: false,
+    hasGuarantee: false,
+    guaranteePeriod: "12 months",
+    visualDirection: "Elegant editorial gallery-led layout with portfolio grid, package pricing, and a simple booking enquiry.",
+    testimonials: [
+      { name: "Priya R.", suburb: "Ballito", quote: "Our wedding gallery was stunning and delivered earlier than promised." },
+      { name: "Mark D.", suburb: "Durban North", quote: "Professional product shots that lifted our online store instantly." },
+      { name: "Zanele M.", suburb: "La Lucia", quote: "Made our whole family relax, the portraits are gorgeous." }
+    ]
+  }
+};
