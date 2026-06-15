@@ -7,6 +7,12 @@ export function isWaasTestMode() {
   return ["1", "true", "yes", "on"].includes(value.toLowerCase());
 }
 
+export function isPublishingPaused() {
+  const value = process.env.PUBLISHING_PAUSED ?? process.env.NEXT_PUBLIC_PUBLISHING_PAUSED;
+  if (!value) return true;
+  return !["0", "false", "no", "off"].includes(value.toLowerCase());
+}
+
 export function hasSupabaseBrowserConfig() {
   return Boolean(process.env.NEXT_PUBLIC_SUPABASE_URL && getSupabasePublishableKey());
 }

@@ -34,51 +34,51 @@ export const dynamic = "force-dynamic";
 const sections: Record<string, AdminSectionConfig> = {
   payment: {
     title: "Payment Operations",
-    copy: "Monitor Peach checkout readiness, failed collections, subscription status, and billing recovery work.",
+    copy: "Monitor checkout readiness, failed collections, subscription status, and billing recovery work.",
     icon: CircleDollarSign,
-    source: "Billing events, client subscription fields, and Peach webhook status.",
+    source: "Billing events, client subscription fields, and payment webhook status.",
     cards: [
       { title: "Recurring billing health", copy: "Use active, pending, past due, paused, and cancelled subscription states to prioritise accounts.", status: "Live from Supabase" },
       { title: "Failed-payment follow-up", copy: "Past-due clients keep their suspension window visible so recovery work is clear.", status: "Client-state driven" },
-      { title: "Checkout readiness", copy: "Peach credentials and service-role access must be present before production checkout starts.", status: "Setup-gated" }
+      { title: "Checkout readiness", copy: "Payment-provider credentials and service-role access must be present before production checkout starts.", status: "Setup-gated" }
     ],
-    checklist: ["Confirm Peach credentials", "Review past-due clients", "Check webhook processing", "Escalate failed collection recovery"]
+    checklist: ["Confirm payment-provider credentials", "Review past-due clients", "Check webhook processing", "Escalate failed collection recovery"]
   },
   customers: {
     title: "Customer Operations",
-    copy: "Review client onboarding progress, publish readiness, contact completeness, and account health.",
+    copy: "Review client onboarding progress, launch readiness, contact completeness, and account health.",
     icon: Users,
-    source: "Client rows, onboarding progress, billing status, and publish state.",
+    source: "Client rows, onboarding progress, billing status, and launch state.",
     cards: [
       { title: "Client list", copy: "The command center shows live client records once onboarding creates them.", status: "Live from Supabase" },
       { title: "Onboarding progress", copy: "Current step and completed steps are tracked per client for follow-up.", status: "Progress-tracked" },
-      { title: "Account status", copy: "Billing, publication, and contact readiness are shown without demo records.", status: "No sample fallback" }
+      { title: "Account status", copy: "Billing, launch, and contact readiness are shown without demo records.", status: "No sample fallback" }
     ],
-    checklist: ["Review incomplete clients", "Check missing contact data", "Open published sites", "Prioritise past-due accounts"]
+    checklist: ["Review incomplete clients", "Check missing contact data", "Open live sites", "Prioritise past-due accounts"]
   },
   messages: {
     title: "Message Operations",
     copy: "Keep captured website enquiries accountable and route responses through configured client contact channels.",
     icon: MessageSquare,
-    source: "Published-site enquiry submissions and client reply contact details.",
+    source: "Live-site enquiry submissions and client reply contact details.",
     cards: [
-      { title: "Enquiry capture", copy: "Only real published client sites can accept public enquiries.", status: "Published-site gated" },
+      { title: "Enquiry capture", copy: "Only real live client sites can accept public enquiries.", status: "Live-site gated" },
       { title: "Reply routing", copy: "The dashboard asks for a business email before presenting an inbox action.", status: "Contact-gated" },
-      { title: "Support handoff", copy: "Billing and publishing issues can be escalated from the support panel.", status: "Operational route" }
+      { title: "Support handoff", copy: "Billing and launch issues can be escalated from the support panel.", status: "Operational route" }
     ],
-    checklist: ["Check new enquiries", "Verify client reply email", "Prioritise urgent service requests", "Escalate publish or billing issues"]
+    checklist: ["Check new enquiries", "Verify client reply email", "Prioritise urgent service requests", "Escalate launch or billing issues"]
   },
   templates: {
     title: "Template Operations",
     copy: "Keep the available website styles aligned with the SiteRent HVAC offer and the AI builder output.",
     icon: Package,
-    source: "Template style constants, onboarding selections, AI plan output, and published-site renderer.",
+    source: "Template style constants, onboarding selections, AI plan output, and site renderer.",
     cards: [
-      { title: "Template library", copy: "Four production starter styles are available through builder, onboarding, dashboard, and published sites.", status: "Shared constants" },
+      { title: "Template library", copy: "Production starter styles are available through builder, onboarding, dashboard, and site preview.", status: "Shared constants" },
       { title: "Preview states", copy: "Dashboard preview renders from the current client record rather than sample site data.", status: "Client-record driven" },
-      { title: "Style selection", copy: "Onboarding stores the chosen template key for future dashboard and published-site updates.", status: "Persisted field" }
+      { title: "Style selection", copy: "Onboarding stores the chosen template key for future dashboard and launch updates.", status: "Persisted field" }
     ],
-    checklist: ["Review client style selection", "Confirm preview copy", "Check uploaded media", "Republish after style updates"]
+    checklist: ["Review client style selection", "Confirm preview copy", "Check uploaded media", "Review style updates"]
   },
   invoices: {
     title: "Invoice Operations",
@@ -102,43 +102,43 @@ const sections: Record<string, AdminSectionConfig> = {
       { title: "Conversion signals", copy: "Lead and source metrics do not invent activity before real submissions arrive.", status: "No demo metrics" },
       { title: "Review identity", copy: "Review CTA status depends on a stored Google Place ID.", status: "Place-ID gated" }
     ],
-    checklist: ["Add GA4 measurement ID", "Add Meta Pixel ID if needed", "Add Google Place ID", "Review data after publish"]
+    checklist: ["Add GA4 measurement ID", "Add Meta Pixel ID if needed", "Add Google Place ID", "Review data after launch"]
   },
   integrations: {
     title: "Integration Preflight",
-    copy: "Inspect the live runtime configuration before connecting real Supabase, Gemini, Peach, Vercel, email, and analytics accounts.",
+    copy: "Inspect the live runtime configuration before connecting real Supabase, Gemini, payment, Vercel, email, and analytics accounts.",
     icon: PlugZap,
     source: "Environment variables, fail-closed route behavior, provider sandboxes, and production smoke checks.",
     cards: [
       { title: "Critical blockers", copy: "Core launch dependencies are separated from optional reporting and workflow integrations.", status: "Live env check" },
-      { title: "Provider sandboxes", copy: "Peach, email, domains, and analytics stay in setup-aware states until credentials and provider-side tests are complete.", status: "Test-gated" },
+      { title: "Provider sandboxes", copy: "Payment, email, domains, and analytics stay in setup-aware states until credentials and provider-side tests are complete.", status: "Test-gated" },
       { title: "Smoke gate", copy: "The local smoke script verifies route behavior before provider credentials are switched live.", status: "Repeatable" }
     ],
     checklist: ["Fill critical environment variables", "Run provider sandboxes", "Run route smoke checks", "Switch live credentials one provider at a time"]
   },
   automation: {
     title: "Automation Operations",
-    copy: "Track the production prerequisites for reminders, publish confirmation, billing alerts, and support triggers.",
+    copy: "Track the production prerequisites for reminders, launch confirmation, billing alerts, and support triggers.",
     icon: Workflow,
-    source: "Email provider settings, billing events, publish events, and client contact fields.",
+    source: "Email provider settings, billing events, launch events, and client contact fields.",
     cards: [
       { title: "Reminder jobs", copy: "Operational reminders should only run once email credentials and recipient fields are configured.", status: "Config-gated" },
-      { title: "Publish confirmations", copy: "Publish confirmation events are queued only for real client records.", status: "Client-record driven" },
-      { title: "Support triggers", copy: "Domain, billing, and publish issues route through the support paths already exposed in the dashboard.", status: "Workflow-ready" }
+      { title: "Launch confirmations", copy: "Launch confirmation events are queued only for real client records.", status: "Client-record driven" },
+      { title: "Support triggers", copy: "Domain, billing, and launch issues route through the support paths already exposed in the dashboard.", status: "Workflow-ready" }
     ],
-    checklist: ["Configure email provider", "Confirm publish event queue", "Review failed-payment alerts", "Test support handoff"]
+    checklist: ["Configure email provider", "Confirm launch event queue", "Review failed-payment alerts", "Test support handoff"]
   },
   settings: {
     title: "Platform Settings",
-    copy: "Review production configuration needed for auth, AI, payments, publishing, email, and tracking.",
+    copy: "Review production configuration needed for auth, AI, payments, launch, email, and tracking.",
     icon: Cog,
     source: "Environment variables, Supabase service access, and client-level connection fields.",
     cards: [
       { title: "Auth defaults", copy: "Supabase Auth and Google OAuth are required before protected product pages load.", status: "Auth-gated" },
-      { title: "Service credentials", copy: "Gemini, Peach, Vercel, and email credentials are setup-required before their production actions run.", status: "Fail-closed" },
+      { title: "Service credentials", copy: "Gemini, payment, Vercel, and email credentials are setup-required before their production actions run.", status: "Fail-closed" },
       { title: "Workspace settings", copy: "Client settings save through authenticated dashboard APIs.", status: "Session-gated" }
     ],
-    checklist: ["Add Supabase keys", "Configure Google OAuth", "Add Gemini key", "Add Peach and Vercel credentials"]
+    checklist: ["Add Supabase keys", "Configure Google OAuth", "Add Gemini key", "Add payment and Vercel credentials"]
   },
   security: {
     title: "Security Operations",
@@ -147,8 +147,8 @@ const sections: Record<string, AdminSectionConfig> = {
     source: "Supabase Auth claims, admin_users records, middleware route gates, and service-role APIs.",
     cards: [
       { title: "Access review", copy: "Admin pages require a signed-in user and an admin_users record.", status: "Admin-gated" },
-      { title: "Production APIs", copy: "Builder, onboarding, dashboard, billing, publish, upload, and admin APIs require authentication.", status: "Middleware-gated" },
-      { title: "Public exceptions", copy: "Published sites, enquiry capture, Peach return, and Peach webhook routes remain public for legitimate external traffic.", status: "Scoped exceptions" }
+      { title: "Production APIs", copy: "Builder, onboarding, dashboard, billing, launch, upload, and admin APIs require authentication.", status: "Middleware-gated" },
+      { title: "Public exceptions", copy: "Live sites, enquiry capture, payment return, and payment webhook routes remain public for legitimate external traffic.", status: "Scoped exceptions" }
     ],
     checklist: ["Review admin_users table", "Smoke protected routes", "Check public callback routes", "Audit service-role usage"]
   },
@@ -158,8 +158,8 @@ const sections: Record<string, AdminSectionConfig> = {
     icon: LifeBuoy,
     source: "Tutorial page, dashboard support panel, README, and progress ledger.",
     cards: [
-      { title: "First-time guide", copy: "The tutorial walks users through register, AI draft, onboarding, publish, and maintenance.", status: "Available" },
-      { title: "Support contacts", copy: "Dashboard support actions separate publishing and billing questions.", status: "Operational" },
+      { title: "First-time guide", copy: "The tutorial walks users through register, AI draft, onboarding, review, and maintenance.", status: "Available" },
+      { title: "Support contacts", copy: "Dashboard support actions separate launch and billing questions.", status: "Operational" },
       { title: "Runbook notes", copy: "README and PROGRESS record the current production setup requirements and verification gates.", status: "Documented" }
     ],
     checklist: ["Open the tutorial", "Review README setup", "Check production smoke results", "Escalate missing credentials"]

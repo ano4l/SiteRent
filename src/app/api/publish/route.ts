@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { getCustomDomainInstructions, getSiteUrl, isValidSubdomain, PLATFORM_DOMAIN } from "@/lib/domains";
 import { queuePublishConfirmationEmail } from "@/lib/email/publish-confirmation";
-import { getMissingSupabaseServiceConfig, hasSupabaseBrowserConfig, isWaasTestMode, productionConfigError } from "@/lib/env";
+import { getMissingSupabaseServiceConfig, hasSupabaseBrowserConfig, isPublishingPaused, isWaasTestMode, productionConfigError } from "@/lib/env";
 import { getAuthenticatedUserId } from "@/lib/client-auth";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { addDomainToVercelProject } from "@/lib/vercel";
@@ -26,6 +26,16 @@ export async function POST(request: Request) {
   const subdomain = slugifySubdomain(payload.data.subdomain);
   if (!isValidSubdomain(subdomain)) {
     return NextResponse.json({ error: "Invalid or reserved subdomain" }, { status: 400 });
+  }
+
+  if (isPublishingPaused()) {
+    return NextResponse.json(
+      {
+        error: "Publishing is paused for this rollout. The onboarding draft can be saved, but no website will be published yet.",
+        code: "PUBLISHING_PAUSED"
+      },
+      { status: 503 }
+    );
   }
 
   if (isWaasTestMode()) {

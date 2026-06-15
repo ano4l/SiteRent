@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { getSubscriptionPeriodEnd } from "@/lib/billing";
-import { getMissingSupabaseServiceConfig, hasSupabaseBrowserConfig, isWaasTestMode, productionConfigError } from "@/lib/env";
+import { getMissingSupabaseServiceConfig, hasSupabaseBrowserConfig, isPublishingPaused, isWaasTestMode, productionConfigError } from "@/lib/env";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
@@ -62,6 +62,16 @@ export async function POST(request: Request) {
   const { clientId, action } = payload.data;
 
   if (action === "republish") {
+    if (isPublishingPaused()) {
+      return NextResponse.json(
+        {
+          error: "Publishing is paused for this rollout. Admin re-publish is disabled until publishing is re-enabled.",
+          code: "PUBLISHING_PAUSED"
+        },
+        { status: 503 }
+      );
+    }
+
     const { error } = await supabase
       .from("clients")
       .update({ site_published: true, published_at: now })

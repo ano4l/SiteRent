@@ -2,7 +2,9 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { INDUSTRY_TEMPLATES, SERVICE_CATALOG } from "@/lib/constants";
 import { isWaasTestMode } from "@/lib/env";
-import { generateWebsitePlan, hasGeminiConfig, type AiWebsiteAttachment } from "@/lib/gemini";
+import { generateWebsitePlan, getGeminiMissingConfig, hasGeminiConfig, type AiWebsiteAttachment } from "@/lib/gemini";
+
+export const runtime = "nodejs";
 
 const websitePlanSchema = z.object({
   mode: z.enum(["create", "restyle", "copy-refresh"]).default("create"),
@@ -40,7 +42,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Invalid AI website plan payload" }, { status: 400 });
   }
 
-  if (isWaasTestMode()) {
+  if (isWaasTestMode() && !hasGeminiConfig()) {
     return NextResponse.json({
       ok: true,
       provider: "gemini",
@@ -52,8 +54,8 @@ export async function POST(request: Request) {
   if (!hasGeminiConfig()) {
     return NextResponse.json(
       {
-        error: "Gemini is not configured for production.",
-        missing: ["GEMINI_API_KEY"]
+        error: "Gemini is not configured.",
+        missing: getGeminiMissingConfig()
       },
       { status: 503 }
     );

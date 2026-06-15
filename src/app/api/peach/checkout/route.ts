@@ -8,7 +8,7 @@ import {
   getPeachCheckoutUrl,
   hasPeachCheckoutConfig
 } from "@/lib/peach";
-import { getMissingSupabaseServiceConfig, hasSupabaseBrowserConfig, isWaasTestMode, productionConfigError } from "@/lib/env";
+import { getMissingSupabaseServiceConfig, hasSupabaseBrowserConfig, isPublishingPaused, isWaasTestMode, productionConfigError } from "@/lib/env";
 import { getAuthenticatedUserId } from "@/lib/client-auth";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { TEST_CLIENT_ID } from "@/lib/test-data";
@@ -28,12 +28,22 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Invalid checkout payload" }, { status: 400 });
   }
 
+  if (isPublishingPaused()) {
+    return NextResponse.json(
+      {
+        error: "Checkout is paused for this rollout. Onboarding can save a draft, but Peach billing will not start yet.",
+        code: "CHECKOUT_PAUSED"
+      },
+      { status: 503 }
+    );
+  }
+
   if (isWaasTestMode()) {
     return NextResponse.json({
       ok: true,
       mode: "local",
       clientId: payload.data.clientId ?? TEST_CLIENT_ID,
-      message: "Test mode: Peach checkout was treated as successful."
+      message: "Test mode: checkout was treated as successful."
     });
   }
 

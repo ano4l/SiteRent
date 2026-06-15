@@ -7,8 +7,14 @@ type AdminAction = "republish" | "pause" | "cancel" | "reactivate" | "refund";
 
 export function AdminClientActions({ clientId }: { clientId: string }) {
   const [status, setStatus] = useState<string | null>(null);
+  const publishingPaused = process.env.NEXT_PUBLIC_PUBLISHING_PAUSED !== "false";
 
   async function runAction(action: AdminAction) {
+    if (action === "republish" && publishingPaused) {
+      setStatus("launch paused");
+      return;
+    }
+
     setStatus(`${action}...`);
     const body =
       action === "refund"
@@ -26,7 +32,7 @@ export function AdminClientActions({ clientId }: { clientId: string }) {
 
   return (
     <div className="flex flex-wrap items-center gap-2">
-      <ActionButton label="Republish" icon={RefreshCw} onClick={() => runAction("republish")} />
+      <ActionButton label={publishingPaused ? "Launch paused" : "Republish"} icon={RefreshCw} onClick={() => runAction("republish")} disabled={publishingPaused} />
       <ActionButton label="Pause" icon={Pause} onClick={() => runAction("pause")} />
       <ActionButton label="Cancel" icon={Ban} onClick={() => runAction("cancel")} tone="danger" />
       <ActionButton label="Override" icon={RotateCcw} onClick={() => runAction("reactivate")} />
@@ -40,21 +46,24 @@ function ActionButton({
   label,
   icon: Icon,
   onClick,
-  tone = "default"
+  tone = "default",
+  disabled = false
 }: {
   label: string;
   icon: typeof RefreshCw;
   onClick: () => void;
   tone?: "default" | "danger";
+  disabled?: boolean;
 }) {
   return (
     <button
       type="button"
       onClick={onClick}
+      disabled={disabled}
       className={
         tone === "danger"
-          ? "inline-flex h-8 items-center gap-1.5 rounded-full border border-[#ffd8d8] bg-[#fff5f5] px-3 text-xs font-bold text-[#b42318] transition hover:bg-[#ffecec]"
-          : "inline-flex h-8 items-center gap-1.5 rounded-full border border-admin-line-soft bg-admin-surface px-3 text-xs font-bold text-[#333333] transition hover:border-[#111111]"
+          ? "inline-flex h-8 items-center gap-1.5 rounded-full border border-[#ffd8d8] bg-[#fff5f5] px-3 text-xs font-bold text-[#b42318] transition hover:bg-[#ffecec] disabled:cursor-not-allowed disabled:opacity-60"
+          : "inline-flex h-8 items-center gap-1.5 rounded-full border border-admin-line-soft bg-admin-surface px-3 text-xs font-bold text-[#333333] transition hover:border-[#111111] disabled:cursor-not-allowed disabled:opacity-60"
       }
     >
       <Icon size={13} />

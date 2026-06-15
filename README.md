@@ -71,6 +71,14 @@ supabase/migrations/0002_p0_hardening.sql
 
 Copy `.env.example` to `.env.local` and fill in Supabase, Peach Payments sandbox/live, Gemini, Vercel, and email provider credentials.
 
+Publishing is intentionally paused in this rollout. Keep `PUBLISHING_PAUSED=true` and `NEXT_PUBLIC_PUBLISHING_PAUSED=true` until the Supabase, billing, DNS, and launch checks are ready; the publish APIs return setup-paused responses while the flag is on.
+
+Gemini website planning supports either:
+
+- `GEMINI_API_KEY` for the Gemini Developer API.
+- Vertex AI through Google Application Default Credentials. Set `GEMINI_PROVIDER=vertex-ai`, `GEMINI_MODEL=gemini-3.5-flash`, `GOOGLE_CLOUD_PROJECT`, and `GOOGLE_CLOUD_LOCATION=global`, then run `gcloud auth application-default login` locally and enable `aiplatform.googleapis.com`.
+- On Vercel, local ADC is not available. Use `GEMINI_API_KEY`, or store service-account JSON in `GOOGLE_APPLICATION_CREDENTIALS_JSON` or base64-encoded JSON in `GOOGLE_APPLICATION_CREDENTIALS_BASE64`.
+
 Supabase Auth is required before users can access `/builder`, `/onboarding`, `/dashboard`, `/admin`, `/tutorial`, or production action APIs. Configure Google as an OAuth provider in Supabase and allow `/auth/callback` as a redirect URL.
 
 ## Production Notes

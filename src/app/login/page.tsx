@@ -239,7 +239,7 @@ export default function LoginPage({ searchParams }: LoginPageProps) {
             {testMode && (
               <div className="mt-5 rounded-2xl border border-blue-100 bg-blue-50 p-4">
                 <p className="text-sm font-semibold text-blue-900">Supabase is bypassed for this local run.</p>
-                <p className="mt-1 text-sm leading-6 text-blue-800">Dashboard, admin, onboarding, publish, uploads, billing, and AI actions use test responses.</p>
+                <p className="mt-1 text-sm leading-6 text-blue-800">Dashboard, admin, onboarding, uploads, billing, and AI actions use test responses.</p>
                 <button type="button" onClick={continueInTestMode} className="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-blue-700 px-5 py-3 text-sm font-bold text-white transition hover:bg-blue-800">
                   Continue without Supabase
                   <LayoutGrid className="size-4" />
@@ -346,12 +346,12 @@ export default function LoginPage({ searchParams }: LoginPageProps) {
             <div className="flex items-center justify-between border-b border-app-line-soft pb-4">
               <div>
                 <p className="text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground">First-use guide</p>
-                <h2 className="mt-1 text-2xl font-bold">Create, onboard, publish, monitor</h2>
+                <h2 className="mt-1 text-2xl font-bold">Create, onboard, review, monitor</h2>
               </div>
               <span className="rounded-full bg-blue-50 px-3 py-1 text-xs font-bold text-blue-700">Auth first</span>
             </div>
             <div className="mt-5 grid gap-3">
-              {["Register or sign in", "Generate an AI draft", "Complete onboarding", "Publish from the dashboard"].map((item, index) => (
+              {["Register or sign in", "Generate an AI draft", "Complete onboarding", "Review from the dashboard"].map((item, index) => (
                 <div key={item} className="flex items-center gap-3 rounded-xl bg-app-surface p-3 text-sm font-semibold text-foreground">
                   <span className="grid size-7 place-items-center rounded-full bg-white text-xs font-bold">{index + 1}</span>
                   {item}

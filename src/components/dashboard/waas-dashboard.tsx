@@ -32,7 +32,6 @@ import {
   PanelLeftClose,
   Plus,
   RadioTower,
-  Rocket,
   Search,
   Server,
   Settings,
@@ -52,7 +51,6 @@ import {
 import { BillingPanel } from "@/components/dashboard/billing-panel";
 import { EditWebsiteForm } from "@/components/dashboard/edit-website-form";
 import { PhotosManager } from "@/components/dashboard/photos-manager";
-import { PublishResultNotice } from "@/components/dashboard/publish-result-notice";
 import { RepublishButton } from "@/components/dashboard/republish-button";
 import { TrackingSettingsForm } from "@/components/dashboard/tracking-settings-form";
 import { HvacSite } from "@/components/published/hvac-site";
@@ -87,7 +85,7 @@ const sidebarGroups: SidebarGroup[] = [
 ];
 
 const sectionCopy: Record<Section, string> = {
-  overview: "Website health, readiness, billing, and publishing next steps.",
+  overview: "Website health, readiness, billing, and launch next steps.",
   website: "Edit customer-facing copy, services, contact details, and trust proof.",
   view: "Preview the website and ask the assistant for focused improvements.",
   domain: "Manage the website domain, DNS status, and provider connections.",
@@ -100,7 +98,7 @@ const sectionCopy: Record<Section, string> = {
   billing: "Manage subscription health, billing dates, and payment status.",
   reviews: "Connect review identity and improve social proof readiness.",
   settings: "Manage account settings, tracking IDs, and workspace metadata.",
-  support: "Get help with publishing, domains, billing, and change requests."
+  support: "Get help with launch readiness, domains, billing, and change requests."
 };
 
 function getRuntimeStatus(mode: DashboardData["mode"]) {
@@ -131,7 +129,6 @@ export function WaasDashboard({ data, siteUrl, initialSection = "overview" }: { 
       <main className="min-h-screen bg-[radial-gradient(circle_at_18%_8%,rgba(204,251,241,0.78),transparent_30%),radial-gradient(circle_at_86%_12%,rgba(219,234,254,0.72),transparent_28%),linear-gradient(180deg,#fbfbfd_0%,#f4f6f8_100%)] text-foreground">
         <ProjectsTopBar />
         <section className="mx-auto max-w-7xl px-6 py-10 lg:px-8 lg:py-14">
-          <PublishResultNotice />
           <FirstUseGuide />
           {!data.hasWebsite ? (
             <EmptyWebsiteState />
@@ -195,7 +192,6 @@ export function WaasDashboard({ data, siteUrl, initialSection = "overview" }: { 
         )}
 
         <section className={cn("flex-1", activeSection === "view" || activeSection === "settings" ? "overflow-hidden px-0 py-0" : "overflow-auto px-4 py-5 sm:px-5 md:px-7 md:py-7")}>
-          <PublishResultNotice />
           {activeSection !== "view" && activeSection !== "settings" && <FirstUseGuide />}
           <ProjectWorkspace data={data} siteUrl={siteUrl} activeSection={activeSection} setActiveSection={setActiveSection} onBack={() => {
             setSelectedProject(null);
@@ -273,8 +269,8 @@ function FirstUseGuide() {
 
   const steps = [
     { title: "Create an AI draft", copy: "Start with the business name, services, city, and proof. Upload notes or photos if they help.", href: "/builder", icon: Wand2 },
-    { title: "Complete onboarding", copy: "Confirm services, style, contact routes, payment, and the production subdomain.", href: "/onboarding", icon: MonitorCheck },
-    { title: "Publish and review", copy: "Use the dashboard preview, connect tracking, and publish only when the basics are complete.", href: "/dashboard?section=view", icon: Rocket },
+    { title: "Complete onboarding", copy: "Confirm services, style, contact routes, and the preferred draft address.", href: "/onboarding", icon: MonitorCheck },
+    { title: "Review the draft", copy: "Use the dashboard preview, connect tracking, and keep launch blockers visible while publishing is paused.", href: "/dashboard?section=view", icon: MonitorCheck },
     { title: "Keep it updated", copy: "Add project photos, respond to enquiries, and use the AI assistant for copy improvements.", href: "/dashboard?section=photos", icon: UploadCloud }
   ];
 
@@ -288,7 +284,7 @@ function FirstUseGuide() {
           </div>
           <h2 className="mt-3 text-2xl font-bold tracking-tight text-foreground">Use SiteRent in the right order.</h2>
           <p className="mt-2 max-w-2xl text-sm leading-6 text-muted-foreground">
-            These are the production steps for a first client: authenticate, draft, onboard, publish, then maintain.
+            These are the production steps for a first client: authenticate, draft, onboard, review, then maintain.
           </p>
         </div>
         <button type="button" onClick={dismiss} className="rounded-xl border border-border bg-white px-4 py-2 text-sm font-semibold text-muted-foreground transition hover:text-foreground">
@@ -749,11 +745,10 @@ function EmptyWebsiteState() {
           <Plus className="size-6" />
         </div>
         <h2 className="mt-5 text-3xl font-bold tracking-tight text-foreground">Create your first website</h2>
-        <p className="mt-3 text-sm leading-6 text-muted-foreground">Your workspace is ready. Start with the AI builder for a draft, or go straight into onboarding to choose a template style, add business details, and publish.</p>
+        <p className="mt-3 text-sm leading-6 text-muted-foreground">Your workspace is ready. Start with the AI builder for a draft, or go straight into onboarding to choose a template style, add business details, and submit a build request.</p>
         <div className="mt-6 flex flex-wrap justify-center gap-3">
           <Link href="/builder" className="inline-flex items-center gap-2 rounded-lg bg-accent px-5 py-3 text-sm font-bold text-accent-foreground"><Wand2 className="size-4" /> Build with AI</Link>
           <Link href="/onboarding" className="inline-flex items-center gap-2 rounded-lg bg-accent px-5 py-3 text-sm font-bold text-accent-foreground"><Plus className="size-4" /> Create website</Link>
-          <Link href="/onboarding?demo=1" className="inline-flex items-center gap-2 rounded-lg border border-border bg-secondary px-5 py-3 text-sm font-bold text-foreground"><MonitorCheck className="size-4" /> Demo onboarding</Link>
         </div>
       </section>
     </div>
@@ -879,7 +874,7 @@ function LeadQualityPanel({ analytics }: { analytics: CustomerAnalytics }) {
         <p className="text-sm font-semibold text-foreground">Plain-English readout</p>
         <p className="mt-2 text-sm leading-6 text-muted-foreground">
           {analytics.topSource === "Pending"
-            ? "Connect analytics and publish the site to start collecting traffic, source, and enquiry data."
+            ? "Connect analytics now; traffic, source, and enquiry data will start once publishing is re-enabled."
             : `${analytics.topSource} is currently the strongest source. Keep pricing, response time, and trust proof clear on the highest-converting pages.`}
         </p>
       </div>
@@ -889,7 +884,7 @@ function LeadQualityPanel({ analytics }: { analytics: CustomerAnalytics }) {
 
 function CustomerActionPanel({ data, profileReady, photos, trackingReady }: { data: DashboardData; profileReady: boolean; photos: number; trackingReady: boolean }) {
   const items = [
-    { label: "Website live", ready: data.client.site_published, action: "Publish the website" },
+    { label: "Build request submitted", ready: data.hasWebsite, action: "Complete onboarding" },
     { label: "Contact details", ready: profileReady, action: "Add phone and city" },
     { label: "Project photos", ready: photos >= 3, action: "Add 3 project photos" },
     { label: "Visit tracking", ready: trackingReady, action: "Connect GA4 or Pixel" }
@@ -1009,7 +1004,7 @@ function WebsitePanel({ data }: { data: DashboardData }) {
                 </span>
                 <div>
                   <p className="text-sm font-semibold text-foreground">After editing</p>
-                  <p className="text-xs text-muted-foreground">Republish so visitors see the latest content.</p>
+                  <p className="text-xs text-muted-foreground">Save draft changes for review while publishing is paused.</p>
                 </div>
               </div>
             </div>
@@ -1018,7 +1013,7 @@ function WebsitePanel({ data }: { data: DashboardData }) {
       </section>
       <EditWebsiteForm client={data.client} />
       <div className="rounded-[24px] border border-white/74 bg-white/62 p-6 shadow-[0_22px_60px_rgba(15,23,42,0.08)] ring-1 ring-white/70 backdrop-blur-2xl">
-        <PanelTitle title="Publish saved changes" subtitle="Re-publish after editing so the live site picks up the latest content." />
+        <PanelTitle title="Draft changes saved" subtitle="Publishing is paused for now; edits remain available for dashboard review." />
         <div className="mt-4">
           <RepublishButton clientId={data.client.id} />
         </div>
@@ -1045,7 +1040,7 @@ function DomainPanel({ data, siteUrl }: { data: DashboardData; siteUrl: string |
         <div className="mt-6 grid gap-4 md:grid-cols-3">
           <Info label="Current domain" value={hostname} />
           <Info label="Custom domain" value={data.client.custom_domain ?? "Not connected"} />
-          <Info label="SSL status" value={data.client.site_published ? "Active" : "Pending publish"} />
+          <Info label="SSL status" value={data.client.site_published ? "Active" : "Pending launch"} />
         </div>
       </section>
 
@@ -1157,7 +1152,7 @@ function ControlCenterHeader({ data, siteUrl }: { data: DashboardData; siteUrl: 
   const template = data.client.template_style && data.client.template_style in TEMPLATE_STYLES
     ? TEMPLATE_STYLES[data.client.template_style as keyof typeof TEMPLATE_STYLES]
     : null;
-  const publishedAt = data.client.published_at ? new Date(data.client.published_at).toLocaleString("en-ZA") : "Not published";
+  const lastLaunch = data.client.published_at ? new Date(data.client.published_at).toLocaleString("en-ZA") : "Not launched";
   const leadFormReady = Boolean(data.client.phone || data.client.email || data.client.whatsapp);
   const trackingReady = Boolean(data.client.ga_measurement_id || data.client.pixel_id);
   const runtimeStatus = getRuntimeStatus(data.mode);
@@ -1175,12 +1170,12 @@ function ControlCenterHeader({ data, siteUrl }: { data: DashboardData; siteUrl: 
             {data.client.business_name ?? data.client.trading_name ?? "Website control center"}
           </h2>
           <p className="mt-3 max-w-3xl text-sm leading-6 text-muted-foreground">
-            Monitor site health, publishing state, template deployment, lead capture, analytics, and billing from one operational surface.
+            Monitor site health, launch state, template readiness, lead capture, analytics, and billing from one operational surface.
           </p>
           <div className="mt-6 grid gap-3 md:grid-cols-3">
             <ControlStat label="Endpoint" value={siteUrl ? new URL(siteUrl).hostname : "No subdomain"} />
             <ControlStat label="Template" value={template?.label ?? "Not selected"} />
-            <ControlStat label="Last publish" value={publishedAt} />
+            <ControlStat label="Last launch" value={lastLaunch} />
           </div>
         </div>
         <div className="border-t border-white/70 bg-white/42 p-5 lg:border-l lg:border-t-0">
@@ -1189,7 +1184,7 @@ function ControlCenterHeader({ data, siteUrl }: { data: DashboardData; siteUrl: 
               <span className="text-xs font-bold uppercase tracking-[0.18em] text-muted-foreground">System feed</span>
               <Activity className="size-4 text-accent" />
             </div>
-            <TelemetryLine label="Publishing" value={data.client.site_published ? "Published" : "Draft"} good={data.client.site_published} />
+            <TelemetryLine label="Launch" value={data.client.site_published ? "Live" : "Draft"} good={data.client.site_published} />
             <TelemetryLine label="Lead form" value={leadFormReady ? "Contact ready" : "Missing contact"} good={leadFormReady} />
             <TelemetryLine label="Template deploy" value={template?.label ?? "Pending"} good={Boolean(template)} />
             <TelemetryLine label="Analytics" value={trackingReady ? "Configured" : "Waiting"} good={trackingReady} />
@@ -1202,7 +1197,7 @@ function ControlCenterHeader({ data, siteUrl }: { data: DashboardData; siteUrl: 
 
 function ViewSitePanel({ data, siteUrl, onBack }: { data: DashboardData; siteUrl: string | null; onBack: () => void }) {
   const [device, setDevice] = useState<"desktop" | "tablet" | "mobile">("desktop");
-  const title = data.client.business_name ?? data.client.trading_name ?? "Unpublished website";
+  const title = data.client.business_name ?? data.client.trading_name ?? "Draft website";
   const url = siteUrl ? new URL(siteUrl).hostname : data.client.subdomain ? `${data.client.subdomain}.siterent.co.za` : "Not published";
   const previewPath = data.client.subdomain ? `/sites/${data.client.subdomain}` : "/dashboard?section=domain";
   const previewSite = dashboardClientToPreviewSite(data);
@@ -1295,14 +1290,14 @@ function dashboardClientToPreviewSite(data: DashboardData): ClientSite {
 
   return {
     id: data.client.id,
-    businessName: data.client.business_name ?? data.client.trading_name ?? "Unpublished website",
-    tradingName: data.client.trading_name ?? data.client.business_name ?? "Unpublished website",
+    businessName: data.client.business_name ?? data.client.trading_name ?? "Draft website",
+    tradingName: data.client.trading_name ?? data.client.business_name ?? "Draft website",
     tagline: data.client.tagline ?? "Add a production tagline in website settings.",
     ownerName: "Business owner",
     yearFounded: new Date().getFullYear(),
     businessTypes: ["Service"],
     jobsCompleted: 0,
-    aboutText: "Add the production about section in website settings before publishing.",
+    aboutText: "Add the production about section in website settings before launch review.",
     services: [],
     servicePrices: {},
     certifications: [],
@@ -1375,7 +1370,7 @@ function WebsiteAssistantPanel({ data, previewPath, url }: { data: DashboardData
   const promptSuggestions = [
     "What should I improve first on this website?",
     "Rewrite the hero so it gets more enquiries.",
-    "Find trust gaps before I publish."
+    "Find trust gaps before launch review."
   ];
   const defaultBusinessContext = [
     `${businessName} website at ${url}.`,
@@ -1452,7 +1447,7 @@ function WebsiteAssistantPanel({ data, previewPath, url }: { data: DashboardData
               <span className="rounded-full bg-emerald-50 px-2 py-0.5 text-[11px] font-semibold text-emerald-700">Ready</span>
             </div>
             <h3 className="mt-1 text-xl font-semibold tracking-tight text-foreground">Chat about this website</h3>
-            <p className="mt-1 text-sm leading-6 text-muted-foreground">Ask for clearer copy, stronger trust proof, SEO ideas, or a publish checklist while you preview the real page.</p>
+            <p className="mt-1 text-sm leading-6 text-muted-foreground">Ask for clearer copy, stronger trust proof, SEO ideas, or a launch checklist while you preview the real page.</p>
           </div>
         </div>
       </div>
@@ -1539,7 +1534,7 @@ function WebsiteAssistantPanel({ data, previewPath, url }: { data: DashboardData
             value={draft}
             onChange={(event) => setDraft(event.target.value)}
             className="min-h-28 w-full resize-none rounded-2xl bg-transparent px-3 py-2 text-sm leading-6 text-foreground outline-none placeholder:text-muted-foreground"
-            placeholder="Ask about copy, sections, trust proof, SEO, or what to fix before publishing..."
+            placeholder="Ask about copy, sections, trust proof, SEO, or what to fix before launch review..."
           />
           {attachments.length > 0 && (
             <div className="grid gap-2 px-2 pb-3">
@@ -1607,7 +1602,7 @@ function TemplatesPanel({ data }: { data: DashboardData }) {
         <aside className="rounded-2xl border border-white/70 bg-white/72 p-5 shadow-sm">
           <div className="flex items-center gap-3">
             <div className="flex size-10 items-center justify-center rounded-lg bg-accent text-accent-foreground">
-              <Rocket className="size-5" />
+              <MonitorCheck className="size-5" />
             </div>
             <div>
               <h3 className="text-lg font-bold text-foreground">Conversion template</h3>
@@ -1843,13 +1838,13 @@ function SettingsPanel({ data }: { data: DashboardData }) {
           <SettingsSection title="Domain Settings" subtitle="Website-specific domain configuration.">
             <SettingsInput name="customDomain" label="Custom domain" defaultValue={data.client.custom_domain ?? ""} />
             <ReadOnlySetting label="SiteRent subdomain" value={data.client.subdomain ? `${data.client.subdomain}.siterent.co.za` : "Not reserved yet"} />
-            <ReadOnlySetting label="SSL status" value={data.client.site_published ? "Active" : "Pending publish"} />
+            <ReadOnlySetting label="SSL status" value={data.client.site_published ? "Active" : "Pending launch"} />
             <ReadOnlySetting label="Provider connection" value={data.client.custom_domain ? "Connected" : "Not connected"} />
             <div className="md:col-span-2">
               {data.client.subdomain ? (
                 <SettingsMiniTable rows={[["A", "@", "76.76.21.21"], ["CNAME", "www", `${data.client.subdomain}.siterent.co.za`], ["TXT", "_siterent", "verify-site-owner"]]} />
               ) : (
-                <ReadOnlySetting label="DNS instructions" value="Publish a SiteRent subdomain before DNS records are generated." wide />
+                <ReadOnlySetting label="DNS instructions" value="Reserve a SiteRent subdomain before DNS records are generated." wide />
               )}
             </div>
           </SettingsSection>
@@ -1882,7 +1877,7 @@ function SettingsPanel({ data }: { data: DashboardData }) {
               </div>
               <div className="grid gap-4 md:grid-cols-2">
                 <ReadOnlySetting label="Billing profile" value={data.client.business_name ?? data.client.trading_name ?? "Not configured"} />
-                <ReadOnlySetting label="Expiry" value="Managed by Peach Checkout" />
+                <ReadOnlySetting label="Billing provider" value="Checkout paused until launch" />
                 <ReadOnlySetting label="Card Number" value="No stored card shown" />
                 <ReadOnlySetting label="CVV" value="Never stored by SiteRent" />
               </div>
@@ -1922,7 +1917,7 @@ function SettingsPanel({ data }: { data: DashboardData }) {
         {activeTab === "notifications" && (
           <SettingsSection title="Notification readiness" subtitle="These switches show which alerts can run from the current production configuration.">
             <SettingsToggle label="New lead captured" enabled={hasClientEmail} />
-            <SettingsToggle label="Website publish completed" enabled={data.client.site_published && hasClientEmail} />
+            <SettingsToggle label="Website launch completed" enabled={data.client.site_published && hasClientEmail} />
             <SettingsToggle label="Domain requires attention" enabled={Boolean(data.client.custom_domain || data.client.subdomain)} />
             <SettingsToggle label="Weekly analytics summary" enabled={hasTracking && hasClientEmail} />
           </SettingsSection>
@@ -2082,14 +2077,14 @@ function ReviewsPanel({ data }: { data: DashboardData }) {
 function SupportPanel({ displayName }: { displayName: string }) {
   return (
     <section className="rounded-[24px] border border-white/74 bg-white/72 p-6 shadow-[0_22px_60px_rgba(15,23,42,0.08)] ring-1 ring-white/70 backdrop-blur-2xl">
-      <PanelTitle title="Support center" subtitle="Get help with publishing, billing, domains, and change requests." />
+      <PanelTitle title="Support center" subtitle="Get help with launch readiness, billing, domains, and change requests." />
       <div className="mt-5 grid gap-4 md:grid-cols-3">
         <Info label="Workspace" value={displayName} />
         <Info label="Support SLA" value="1 business day" />
-        <Info label="Escalation" value="Publishing issues first" />
+        <Info label="Escalation" value="Launch blockers first" />
       </div>
       <div className="mt-5 grid gap-4 md:grid-cols-2">
-        <ActionLink icon={Globe2} title="Domain or publish issue" copy="Use this for DNS, live site, and deploy problems." value="Priority" href="mailto:support@siterent.co.za?subject=Publishing support" external />
+        <ActionLink icon={Globe2} title="Domain or launch issue" copy="Use this for DNS, live site, and deploy-readiness problems." value="Priority" href="mailto:support@siterent.co.za?subject=Launch support" external />
         <ActionLink icon={CreditCard} title="Billing question" copy="Subscription, failed payment, or plan changes." value="Billing" href="mailto:support@siterent.co.za?subject=Billing support" external />
       </div>
     </section>
@@ -2126,7 +2121,7 @@ function OpsRail({ data }: { data: DashboardData }) {
       <div className="mt-5 rounded-lg border border-border bg-[#fafafa] p-4">
         <p className="text-xs font-bold uppercase tracking-[0.18em] text-muted-foreground">Next best action</p>
         <p className="mt-2 text-sm font-semibold text-foreground">
-          {data.client.site_published ? "Review traffic and publish fresh project proof." : "Complete publishing setup and deploy the first site version."}
+          {data.client.site_published ? "Review traffic and add fresh project proof." : "Complete launch setup while publishing remains paused."}
         </p>
       </div>
     </aside>
@@ -2238,7 +2233,7 @@ function LaunchPanel({ profileReady, photos, trackingReady, published }: { profi
     { name: "Profile", value: profileReady ? 100 : 0, count: profileReady ? 1 : 0, color: "bg-chart-1" },
     { name: "Photos", value: Math.min(photos * 18, 100), count: photos, color: "bg-chart-3" },
     { name: "Tracking", value: trackingReady ? 100 : 0, count: trackingReady ? 1 : 0, color: "bg-chart-2" },
-    { name: "Publish", value: published ? 100 : 0, count: published ? 1 : 0, color: "bg-accent" }
+    { name: "Launch", value: published ? 100 : 0, count: published ? 1 : 0, color: "bg-accent" }
   ];
   return (
     <section className="h-[380px] rounded-[24px] border border-white/74 bg-white/62 p-5 shadow-[0_22px_60px_rgba(15,23,42,0.08)] ring-1 ring-white/70 backdrop-blur-2xl">
@@ -2265,7 +2260,7 @@ function RecentActivity({ data }: { data: DashboardData }) {
     { label: "Website profile", value: data.client.business_name ?? data.client.trading_name ?? "Incomplete", status: data.client.business_name ? "won" : "pending" },
     { label: "Billing", value: data.client.subscription_status.replace(/_/g, " "), status: data.client.subscription_status === "active" ? "won" : "pending" },
     { label: "Gallery", value: `${data.client.gallery_photos.length}/6 photos`, status: data.client.gallery_photos.length ? "won" : "pending" },
-    { label: "Published site", value: data.client.site_published ? "Live" : "Draft", status: data.client.site_published ? "won" : "pending" }
+    { label: "Launch state", value: data.client.site_published ? "Live" : "Draft", status: data.client.site_published ? "won" : "pending" }
   ] as const;
   const config = {
     won: { icon: CheckCircle2, color: "text-success", bg: "bg-success/10", label: "Ready" },

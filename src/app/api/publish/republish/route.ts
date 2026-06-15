@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { getAuthenticatedUserId } from "@/lib/client-auth";
-import { getMissingSupabaseServiceConfig, hasSupabaseBrowserConfig, isWaasTestMode, productionConfigError } from "@/lib/env";
+import { getMissingSupabaseServiceConfig, hasSupabaseBrowserConfig, isPublishingPaused, isWaasTestMode, productionConfigError } from "@/lib/env";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 
 const republishSchema = z.object({
@@ -13,6 +13,16 @@ export async function POST(request: Request) {
 
   if (!payload.success) {
     return NextResponse.json({ error: "Invalid re-publish payload" }, { status: 400 });
+  }
+
+  if (isPublishingPaused()) {
+    return NextResponse.json(
+      {
+        error: "Publishing is paused for this rollout. Saved edits remain draft-only until publishing is re-enabled.",
+        code: "PUBLISHING_PAUSED"
+      },
+      { status: 503 }
+    );
   }
 
   if (isWaasTestMode()) {

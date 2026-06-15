@@ -1,10 +1,10 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { ArrowRight, CheckCircle2, CreditCard, LayoutDashboard, Rocket, Sparkles, UploadCloud, Wand2 } from "lucide-react";
+import { ArrowRight, CheckCircle2, CreditCard, LayoutDashboard, MonitorCheck, Sparkles, UploadCloud, Wand2 } from "lucide-react";
 
 export const metadata: Metadata = {
   title: "SiteRent First-Time Guide",
-  description: "A first-use tutorial for creating, onboarding, publishing, and maintaining a SiteRent website."
+  description: "A first-use tutorial for creating, onboarding, reviewing, and maintaining a SiteRent website draft."
 };
 
 const tutorialSteps = [
@@ -16,15 +16,15 @@ const tutorialSteps = [
   },
   {
     title: "Complete onboarding",
-    copy: "Confirm services, proof, template, contact routes, payment, and the production address before publishing.",
+    copy: "Confirm services, proof, template, contact routes, and the preferred draft address before submission.",
     href: "/onboarding",
     icon: CheckCircle2
   },
   {
-    title: "Publish and verify",
-    copy: "Use the dashboard preview and publish controls to review the site before the customer sees it live.",
+    title: "Review before launch",
+    copy: "Use the dashboard preview to review the site while publishing, billing, and DNS actions stay paused.",
     href: "/dashboard?section=view",
-    icon: Rocket
+    icon: MonitorCheck
   },
   {
     title: "Maintain the account",
@@ -62,7 +62,7 @@ export default function TutorialPage() {
             </div>
             <h1 className="mt-5 text-4xl font-bold leading-tight tracking-tight md:text-6xl">Create the first client website in the right order.</h1>
             <p className="mt-4 text-base leading-8 text-muted-foreground">
-              SiteRent is now auth-first. Sign in, create a draft, complete onboarding, publish, and then maintain the live account from the dashboard.
+              SiteRent is now auth-first. Sign in, create a draft, complete onboarding, review it in the dashboard, and keep publishing paused until launch checks are complete.
             </p>
           </div>
 
@@ -85,7 +85,7 @@ export default function TutorialPage() {
           </div>
 
           <div className="mt-8 grid gap-4 rounded-2xl border border-app-line bg-app-surface p-5 md:grid-cols-3">
-            <MiniGuide icon={CreditCard} title="Payment" copy="Peach checkout should be configured before the payment step is used with a real client." />
+            <MiniGuide icon={CreditCard} title="Billing" copy="Checkout remains behind provider setup, but onboarding does not charge while publishing is paused." />
             <MiniGuide icon={UploadCloud} title="Files" copy="AI accepts images, PDFs, text, markdown, and JSON attachments for better planning." />
             <MiniGuide icon={LayoutDashboard} title="Dashboard" copy="Use empty states as setup prompts until real analytics, leads, and billing data arrive." />
           </div>

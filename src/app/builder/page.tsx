@@ -176,7 +176,7 @@ export default function BuilderPage() {
             </div>
             <h1 className="mt-5 text-3xl font-bold leading-tight tracking-tight sm:text-4xl">Generate the first useful website draft.</h1>
             <p className="mt-3 text-sm leading-7 text-muted-foreground">
-              This builder creates a structured website plan, then hands the draft into onboarding so the user can confirm details and publish.
+              This builder creates a structured website plan, then hands the draft into onboarding so the user can confirm details and submit a build request.
             </p>
 
             <form onSubmit={generatePlan} className="mt-7 space-y-4">

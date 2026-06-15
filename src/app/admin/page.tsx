@@ -51,9 +51,9 @@ export default async function AdminPage() {
               <Sparkles size={12} />
               Admin dashboard
             </div>
-            <h1 className="mt-4 text-4xl font-black tracking-tight text-ink md:text-5xl">Client operations, billing health, publish state, and manual controls.</h1>
+            <h1 className="mt-4 text-4xl font-black tracking-tight text-ink md:text-5xl">Client operations, billing health, launch state, and manual controls.</h1>
             <p className="mt-3 max-w-3xl text-sm font-semibold leading-6 text-muted md:text-base">
-              Monitor subscription health, push live updates, and keep the client portfolio moving without switching out of the workspace.
+              Monitor subscription health, review launch readiness, and keep the client portfolio moving without switching out of the workspace.
             </p>
           </div>
           <div className="flex flex-wrap gap-2">
@@ -87,7 +87,7 @@ export default async function AdminPage() {
       <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
         <KpiCard label="Active clients" value={String(data.stats.activeClients)} delta={`${data.stats.totalClients} total`} icon={Users} tone="green" />
         <KpiCard label="Monthly revenue" value={formatCurrencyZar(data.stats.monthlyRevenue)} delta="Active client MRR" icon={CircleDollarSign} tone="red" />
-        <KpiCard label="Published sites" value={String(data.stats.publishedSites)} delta={`${data.stats.onboardingCompletionRate}% onboarding`} icon={LayoutDashboard} tone="blue" />
+        <KpiCard label="Live sites" value={String(data.stats.publishedSites)} delta={`${data.stats.onboardingCompletionRate}% onboarding`} icon={LayoutDashboard} tone="blue" />
         <KpiCard label="Past due" value={String(data.stats.pastDueClients)} delta="Needs attention" icon={Gauge} tone="amber" />
       </section>
 
@@ -155,7 +155,7 @@ export default async function AdminPage() {
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
             <h2 className="text-2xl font-black tracking-tight text-ink">Client command center</h2>
-            <p className="mt-1 max-w-2xl text-sm font-semibold leading-6 text-muted">Publish, pause, cancel, override suspension, and log manual refunds.</p>
+            <p className="mt-1 max-w-2xl text-sm font-semibold leading-6 text-muted">Review launch state, pause, cancel, override suspension, and log manual refunds.</p>
           </div>
           <ToolbarButton icon={Filter} label="Status filter" />
         </div>
@@ -324,7 +324,7 @@ function ClientRow({ client }: { client: AdminClient }) {
         ) : (
           <span className="font-semibold text-muted">Draft</span>
         )}
-        <p className="mt-1 text-xs font-semibold text-muted">{client.sitePublished ? "Published" : "Not live"}</p>
+        <p className="mt-1 text-xs font-semibold text-muted">{client.sitePublished ? "Live" : "Not live"}</p>
       </div>
       <AdminClientActions clientId={client.id} />
     </div>
@@ -403,7 +403,7 @@ function PipelineBars({ clients }: { clients: AdminClient[] }) {
     { label: "Started", value: clients.filter((client) => client.currentStep >= 1).length },
     { label: "Halfway", value: clients.filter((client) => client.currentStep >= 3).length },
     { label: "Ready", value: clients.filter((client) => client.currentStep >= 6 || client.sitePublished).length },
-    { label: "Published", value: clients.filter((client) => client.sitePublished).length }
+    { label: "Live", value: clients.filter((client) => client.sitePublished).length }
   ];
 
   if (!clients.length) {

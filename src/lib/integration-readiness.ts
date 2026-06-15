@@ -1,3 +1,5 @@
+import { getGeminiMissingConfig, hasGeminiConfig } from "@/lib/gemini";
+
 export type IntegrationStatus = "ready" | "attention" | "blocked";
 
 export type EnvRequirement = {
@@ -59,7 +61,8 @@ function buildItem({
   readyLabel = "Ready",
   attentionLabel = "Needs verification",
   blockedLabel = "Missing configuration",
-  statusOverride
+  statusOverride,
+  missingOverride
 }: {
   id: string;
   group: string;
@@ -73,8 +76,9 @@ function buildItem({
   attentionLabel?: string;
   blockedLabel?: string;
   statusOverride?: IntegrationStatus;
+  missingOverride?: string[];
 }): IntegrationReadinessItem {
-  const missing = requirements.flatMap(missingForRequirement);
+  const missing = missingOverride ?? requirements.flatMap(missingForRequirement);
   const status = statusOverride ?? (missing.length ? (launchCritical ? "blocked" : "attention") : "ready");
   const statusLabel = status === "ready" ? readyLabel : status === "blocked" ? blockedLabel : attentionLabel;
 
@@ -98,6 +102,7 @@ export function getIntegrationReadiness(): IntegrationReadinessItem[] {
   const peachSandbox = process.env.PEACH_SANDBOX !== "false";
   const emailConfigured = hasValue("RESEND_API_KEY") || hasValue("SENDGRID_API_KEY");
   const ga4Configured = hasValue("GA4_PROPERTY_ID") && hasValue("GA4_CLIENT_EMAIL") && hasValue("GA4_PRIVATE_KEY");
+  const geminiConfigured = hasGeminiConfig();
 
   return [
     buildItem({
@@ -136,11 +141,14 @@ export function getIntegrationReadiness(): IntegrationReadinessItem[] {
       description: "AI website planning for the builder, admin studio, and dashboard assistant, including file and image context.",
       launchCritical: true,
       requirements: [
-        { label: "Gemini API key", keys: ["GEMINI_API_KEY"] }
+        { label: "Gemini Developer API key", keys: ["GEMINI_API_KEY"] },
+        { label: "Vertex AI ADC project", keys: ["GOOGLE_CLOUD_PROJECT", "GEMINI_VERTEX_PROJECT"], mode: "any" }
       ],
-      evidence: ["The AI route returns setup-required when Gemini is missing.", "Attachment validation limits size and accepted MIME types."],
-      nextStep: "Add a Gemini key, keep the model pinned, and run one create-site and one restyle request in staging.",
-      readyLabel: "AI configured"
+      evidence: ["The AI route uses live Gemini when an API key or Vertex AI ADC is available.", "Attachment validation limits size and accepted MIME types."],
+      nextStep: "Add a Gemini key or connect Vertex AI ADC, keep the model pinned, and run one create-site and one restyle request in staging.",
+      readyLabel: "AI configured",
+      statusOverride: geminiConfigured ? "ready" : undefined,
+      missingOverride: geminiConfigured ? [] : getGeminiMissingConfig()
     }),
     buildItem({
       id: "peach-billing",

@@ -2,9 +2,8 @@
 
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { ArrowLeft, ArrowRight, Check, CheckCircle2, Clock, Globe2, ImageIcon, LockKeyhole, MonitorCheck, Rocket, Sparkles, Upload } from "lucide-react";
-import { BRAND_COLOURS, DEMO_BUSINESSES, INDUSTRY_TEMPLATES, ONBOARDING_STEPS, RESPONSE_TIMES, SERVICE_CATALOG, TEMPLATE_STYLES, WEEK_DAYS } from "@/lib/constants";
-import { TEST_CLIENT_ID } from "@/lib/test-data";
+import { ArrowLeft, ArrowRight, Check, CheckCircle2, Clock, Globe2, ImageIcon, MonitorCheck, Rocket, Sparkles, Upload } from "lucide-react";
+import { BRAND_COLOURS, INDUSTRY_TEMPLATES, ONBOARDING_STEPS, RESPONSE_TIMES, SERVICE_CATALOG, TEMPLATE_STYLES, WEEK_DAYS } from "@/lib/constants";
 import type { TemplateStyle } from "@/lib/types";
 import { cn, slugifySubdomain } from "@/lib/utils";
 
@@ -145,7 +144,6 @@ const initialState: FormState = {
 
 const localStorageKey = "siterent-onboarding-v2";
 const legacyLocalStorageKeys = ["siterent-onboarding-v1"];
-const publishResultStorageKey = "siterent-last-publish-result";
 const aiBuilderDraftStorageKey = "siterent-ai-builder-draft-v2";
 
 function isIndustryTemplate(value: unknown): value is IndustryTemplate {
@@ -243,54 +241,14 @@ function suggestedServicePrices(serviceKeys: readonly string[], existing: Record
   return prices;
 }
 
-function buildDemoForm(key: IndustryTemplate, current: FormState): FormState {
-  const template = INDUSTRY_TEMPLATES[key];
-  const demo = DEMO_BUSINESSES[key];
-  const serviceKeys = [...template.serviceKeys];
-
-  return {
-    ...current,
-    businessType: key,
-    tradingName: demo.tradingName,
-    tagline: template.defaultTagline,
-    ownerName: demo.ownerName,
-    yearFounded: demo.yearFounded,
-    jobsCompleted: demo.jobsCompleted,
-    aboutText: template.defaultAbout,
-    services: serviceKeys,
-    servicePrices: suggestedServicePrices(serviceKeys),
-    customServices: [],
-    certifications: template.defaultCertifications,
-    isInsured: true,
-    hasGuarantee: demo.hasGuarantee,
-    guaranteePeriod: demo.guaranteePeriod,
-    hasEmergency: demo.hasEmergency,
-    offersFreeQuote: true,
-    primaryCity: demo.primaryCity,
-    address: demo.address,
-    suburbs: demo.suburbs,
-    testimonials: demo.testimonials.map((item) => ({ ...item })),
-    phone: demo.phone,
-    whatsapp: demo.whatsapp,
-    email: demo.email,
-    responseTime: demo.responseTime,
-    visualDirection: demo.visualDirection,
-    templateStyle: template.defaultTemplateStyle,
-    brandColour: template.defaultBrandColour,
-    subdomain: slugifySubdomain(demo.tradingName)
-  };
-}
-
 export default function OnboardingPage() {
   const [step, setStep] = useState(0);
   const [form, setForm] = useState<FormState>(initialState);
   const [clientId, setClientId] = useState<string | null>(null);
   const [errors, setErrors] = useState<string[]>([]);
-  const [saveStatus, setSaveStatus] = useState<"idle" | "saving" | "saved" | "error" | "published">("idle");
-  const [paymentStatus, setPaymentStatus] = useState<"idle" | "starting" | "redirecting" | "local" | "error">("idle");
-  const [publishStatus, setPublishStatus] = useState<"idle" | "publishing" | "error">("idle");
+  const [saveStatus, setSaveStatus] = useState<"idle" | "saving" | "saved" | "error">("idle");
+  const [submitStatus, setSubmitStatus] = useState<"idle" | "submitting" | "submitted" | "error">("idle");
   const [subdomainStatus, setSubdomainStatus] = useState<"idle" | "checking" | "available" | "taken" | "invalid">("idle");
-  const [isDemo, setIsDemo] = useState(false);
 
   const percent = Math.round(((step + 1) / ONBOARDING_STEPS.length) * 100);
   const theme = BRAND_COLOURS[form.brandColour];
@@ -332,10 +290,15 @@ export default function OnboardingPage() {
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
-    const demoMode = params.get("demo") === "1";
     const fromBuilder = params.get("fromBuilder") === "1";
     const requestedTemplate = params.get("template");
     const requestedStep = Number(params.get("step"));
+
+    if (params.get("demo") === "1") {
+      params.delete("demo");
+      const nextQuery = params.toString();
+      window.history.replaceState(null, "", nextQuery ? `/onboarding?${nextQuery}` : "/onboarding");
+    }
 
     if (fromBuilder) {
       const draftJson = window.localStorage.getItem(aiBuilderDraftStorageKey);
@@ -354,17 +317,6 @@ export default function OnboardingPage() {
       }
     }
 
-    if (demoMode) {
-      setIsDemo(true);
-      setClientId((current) => current ?? TEST_CLIENT_ID);
-      // Start a clean demo session at the niche picker unless the user already
-      // has saved demo progress (so a refresh does not wipe their choices).
-      if (!window.localStorage.getItem(localStorageKey)) {
-        setForm(initialState);
-        setStep(0);
-        setSaveStatus("idle");
-      }
-    }
     if (requestedTemplate && requestedTemplate in TEMPLATE_STYLES) {
       update("templateStyle", requestedTemplate as TemplateStyle);
     }
@@ -417,10 +369,6 @@ export default function OnboardingPage() {
   }
 
   function applyIndustryTemplate(key: IndustryTemplate) {
-    if (isDemo) {
-      setForm((current) => buildDemoForm(key, current));
-      return;
-    }
     const template = INDUSTRY_TEMPLATES[key];
     setForm((current) => ({
       ...current,
@@ -546,95 +494,20 @@ export default function OnboardingPage() {
     }
   }
 
-  async function startPayment() {
+  async function submitBuildRequest() {
     if (!validateCurrentStep()) return;
 
-    const saved = await saveProgress(5);
-    if (!saved) return;
-
-    setPaymentStatus("starting");
-    const response = await fetch("/api/peach/checkout", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify({
-        clientId: clientId && clientId !== "local-client" ? clientId : undefined,
-        businessName: form.tradingName || "SiteRent Client",
-        email: form.email,
-        phone: form.phone,
-        amount: 300
-      })
-    });
-
-    if (!response.ok) {
-      setPaymentStatus("error");
-      return;
-    }
-
-    const payload = (await response.json()) as
-      | { mode: "local"; message?: string }
-      | { mode: "sandbox" | "live"; url: string; fields: Record<string, string | number | undefined> };
-
-    if (payload.mode === "local") {
-      setPaymentStatus("local");
-      setStep(5);
-      return;
-    }
-
-    setPaymentStatus("redirecting");
-    const paymentForm = document.createElement("form");
-    paymentForm.method = "POST";
-    paymentForm.action = payload.url;
-
-    Object.entries(payload.fields).forEach(([key, value]) => {
-      if (value === undefined || value === "") return;
-      const input = document.createElement("input");
-      input.type = "hidden";
-      input.name = key;
-      input.value = String(value);
-      paymentForm.appendChild(input);
-    });
-
-    document.body.appendChild(paymentForm);
-    paymentForm.submit();
-  }
-
-  async function publishSite() {
-    if (!validateCurrentStep()) return;
-
-    setPublishStatus("publishing");
-    const response = await fetch("/api/publish", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify({
-        clientId: clientId && clientId !== "local-client" ? clientId : TEST_CLIENT_ID,
-        subdomain: form.subdomain,
-        customDomain: form.customDomain,
-        visualDirection: form.visualDirection,
-        acceptedTerms: form.terms
-      })
-    });
-
-    if (!response.ok) {
-      setPublishStatus("error");
+    setSubmitStatus("submitting");
+    const saved = await saveProgress(6);
+    if (!saved) {
+      setSubmitStatus("error");
       setSaveStatus("error");
       return;
     }
 
-    const payload = (await response.json()) as {
-      siteUrl: string;
-      dashboardUrl: string;
-      customDomainInstructions?: unknown;
-      vercelDomain?: unknown;
-    };
-
+    setSubmitStatus("submitted");
     window.localStorage.removeItem(localStorageKey);
-    window.localStorage.setItem(publishResultStorageKey, JSON.stringify(payload));
-    setSaveStatus("published");
-    window.location.assign(payload.dashboardUrl || "/dashboard");
+    window.location.assign("/dashboard");
   }
 
   return (
@@ -647,8 +520,8 @@ export default function OnboardingPage() {
           </Link>
           <div className="mt-8 lg:mt-16">
             <p className="text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground">Create website</p>
-            <h1 className="mt-2 text-2xl font-bold tracking-tight">Launch session</h1>
-            <p className="mt-2 text-sm leading-6 text-muted-foreground">Build the first useful website draft quickly, then refine only what matters before publishing.</p>
+            <h1 className="mt-2 text-2xl font-bold tracking-tight">Build request</h1>
+            <p className="mt-2 text-sm leading-6 text-muted-foreground">Capture the website direction, contact details, and draft address. Publishing is paused while Supabase production setup is restored.</p>
           </div>
           <div className="mt-8 flex gap-3">
             {ONBOARDING_STEPS.map((label, index) => (
@@ -692,9 +565,8 @@ export default function OnboardingPage() {
           <p className="mt-3 rounded-xl bg-[#f4f6f8] p-3 text-xs font-medium leading-5 text-muted-foreground">
             {saveStatus === "idle" && "Progress saves when you continue."}
             {saveStatus === "saving" && "Saving progress..."}
-            {saveStatus === "saved" && "Progress saved."}
+            {saveStatus === "saved" && (submitStatus === "submitted" ? "Build request submitted." : "Progress saved.")}
             {saveStatus === "error" && "Could not save. Please retry."}
-            {saveStatus === "published" && "Website published."}
           </p>
         </aside>
 
@@ -709,14 +581,6 @@ export default function OnboardingPage() {
             {step === 0 && (
               <div className="space-y-4">
                 <StepTitle title="Business basics" copy="Pick the closest business type to load a ready-made starter template, then edit any detail to match the business." />
-                {isDemo && (
-                  <div className="rounded-2xl border border-blue-200 bg-blue-50 p-4 text-sm text-blue-900">
-                    <p className="font-bold">Demo mode</p>
-                    <p className="mt-1 leading-6">
-                      Choose any niche below to instantly fill a realistic sample business — name, services, pricing, proof, and contact details — that you can edit anywhere before previewing.
-                    </p>
-                  </div>
-                )}
                 <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
                   {(Object.entries(INDUSTRY_TEMPLATES) as Array<[IndustryTemplate, (typeof INDUSTRY_TEMPLATES)[IndustryTemplate]]>).map(([key, template]) => (
                     <button
@@ -970,32 +834,32 @@ export default function OnboardingPage() {
                   <PreviewCard title={previewTitle} theme={theme.hex} form={form} />
                 </div>
                 <div className="rounded-xl border border-border bg-background p-5">
-                  <div className="mb-5 inline-flex items-center gap-2 rounded-full bg-amber-100 px-3 py-1 text-sm font-semibold text-amber-800">
-                    <LockKeyhole size={14} /> Unlock to publish
+                  <div className="mb-5 inline-flex items-center gap-2 rounded-full bg-blue-100 px-3 py-1 text-sm font-semibold text-blue-800">
+                    <MonitorCheck size={14} /> Draft review
                   </div>
-                  <h2 className="text-2xl font-bold">R300/month</h2>
+                  <h2 className="text-2xl font-bold">Review before submission</h2>
+                  <p className="mt-3 text-sm leading-6 text-muted-foreground">
+                    The site will stay in draft mode for now. No billing checkout, custom-domain registration, or public publish action will run during this phase.
+                  </p>
                   <ul className="mt-4 space-y-2 text-sm text-muted-foreground">
-                    <li>Included: hosted service-business website</li>
-                    <li>Included: dashboard and analytics</li>
-                    <li>Waived setup fee: R0</li>
+                    <li>Included: saved Supabase client draft</li>
+                    <li>Included: AI website plan and dashboard review</li>
+                    <li>Paused: billing, DNS, and public publishing</li>
                   </ul>
-                  <button type="button" onClick={startPayment} className="mt-6 w-full rounded-lg bg-accent px-4 py-3 font-semibold text-accent-foreground">
-                    {paymentStatus === "starting" ? "Preparing Peach..." : "Pay with Peach Payments"}
+                  <button type="button" onClick={continueStep} className="mt-6 w-full rounded-lg bg-accent px-4 py-3 font-semibold text-accent-foreground">
+                    Continue to final check
                   </button>
-                  {paymentStatus === "redirecting" && <p className="mt-3 text-sm font-semibold text-muted-foreground">Redirecting to Peach Checkout...</p>}
-                  {paymentStatus === "local" && <p className="mt-3 text-sm font-semibold text-emerald-700">Local mode: payment treated as successful.</p>}
-                  {paymentStatus === "error" && <p className="mt-3 text-sm font-semibold text-red-700">Could not start payment. Please retry.</p>}
-                  <p className="mt-4 text-sm text-muted-foreground">30-day refund. No contracts. Local support.</p>
+                  <p className="mt-4 text-sm text-muted-foreground">Publishing can be re-enabled later with the production feature flag.</p>
                 </div>
               </div>
             )}
 
             {step === 5 && (
               <div className="space-y-5">
-                <StepTitle title="Publish" copy="Choose the site address and confirm the terms." />
+                <StepTitle title="Submit build request" copy="Reserve the preferred draft address and save the request for dashboard review. Publishing is paused for now." />
                 <PreviewCard title={previewTitle} theme={theme.hex} form={form} />
                 <div>
-                  <TextInput label="Subdomain" value={form.subdomain} onChange={(value) => update("subdomain", slugifySubdomain(value))} suffix=".siterent.co.za" />
+                  <TextInput label="Preferred SiteRent address" value={form.subdomain} onChange={(value) => update("subdomain", slugifySubdomain(value))} suffix=".siterent.co.za" />
                   <p className="mt-2 text-sm font-semibold text-muted-foreground">
                     {subdomainStatus === "idle" && "Enter at least 3 characters to check availability."}
                     {subdomainStatus === "checking" && "Checking availability..."}
@@ -1007,22 +871,22 @@ export default function OnboardingPage() {
                 <TextInput label="Custom domain" value={form.customDomain} onChange={(value) => update("customDomain", value)} />
                 {form.customDomain && (
                   <div className="rounded-lg border border-border bg-secondary p-4 text-sm text-muted-foreground">
-                    DNS setup instructions will be shown after publish for {form.customDomain}.
+                    DNS setup for {form.customDomain} will wait until publishing is re-enabled.
                   </div>
                 )}
                 <label className="flex items-start gap-3 rounded-lg border border-border bg-background p-4 text-sm">
                   <input type="checkbox" checked={form.terms} onChange={(event) => update("terms", event.target.checked)} className="mt-1" />
-                  <span>I agree to publish this website and accept SiteRent terms.</span>
+                  <span>I confirm these details are ready for SiteRent to build from, without publishing the website yet.</span>
                 </label>
                 <button
                   type="button"
                   disabled={!form.terms || subdomainStatus === "taken"}
-                  onClick={publishSite}
+                  onClick={submitBuildRequest}
                   className="rounded-lg bg-accent px-5 py-3 font-semibold text-accent-foreground disabled:cursor-not-allowed disabled:bg-slate-300"
                 >
-                  {publishStatus === "publishing" ? "Publishing..." : "Publish website"}
+                  {submitStatus === "submitting" ? "Saving request..." : "Submit build request"}
                 </button>
-                {publishStatus === "error" && <p className="text-sm font-semibold text-red-700">Could not publish. Please check the subdomain and retry.</p>}
+                {submitStatus === "error" && <p className="text-sm font-semibold text-red-700">Could not save the build request. Please check Supabase and retry.</p>}
               </div>
             )}
 
@@ -1064,7 +928,7 @@ export default function OnboardingPage() {
               <div className="relative mt-6 rounded-[24px] border border-white/80 bg-white/76 p-5 shadow-[0_24px_70px_rgba(15,23,42,0.10)] backdrop-blur-xl">
                 <p className="text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground">What happens next</p>
                 <div className="mt-4 space-y-3">
-                  {["AI prepares your first draft", "You preview and publish", "Leads arrive in the dashboard"].map((item, index) => (
+                  {["AI prepares your first draft", "You submit the build request", "Dashboard tracks the draft"].map((item, index) => (
                     <div key={item} className="flex items-center gap-3 rounded-xl bg-[#f4f6f8] p-3 text-sm font-medium">
                       <span className="grid size-7 place-items-center rounded-full bg-white text-xs font-bold">{index + 1}</span>
                       {item}
@@ -1128,8 +992,8 @@ function OnboardingMomentum({ step, percent }: { step: number; percent: number }
     "Add only the services and locations needed to generate a credible first page.",
     "Pick a style and add proof assets. You can improve media later.",
     "Make contact frictionless before you worry about advanced settings.",
-    "Preview the working site, then unlock hosting.",
-    "Choose the hostable address and publish the first version."
+    "Review the working draft before submission.",
+    "Choose the preferred address and submit the build request."
   ];
 
   return (

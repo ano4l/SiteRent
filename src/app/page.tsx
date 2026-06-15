@@ -10,7 +10,6 @@ import {
   Globe2,
   LayoutDashboard,
   MonitorCheck,
-  Rocket,
   ShieldCheck,
   Sparkles,
   Wand2
@@ -18,7 +17,7 @@ import {
 
 export const metadata: Metadata = {
   title: "SiteRent Websites for Trade Businesses",
-  description: "Launch a rental website for South African service businesses with AI-assisted setup, hosting, billing, and a simple dashboard."
+  description: "Create a rental website draft for South African service businesses with AI-assisted setup, Supabase-backed onboarding, and a simple dashboard."
 };
 
 const workflow = [
@@ -29,12 +28,12 @@ const workflow = [
   },
   {
     title: "Onboarding captures the basics",
-    copy: "Confirm services, trust proof, contact routes, template style, payment, and a publishable address.",
+    copy: "Confirm services, trust proof, contact routes, template style, and a preferred draft address.",
     icon: MonitorCheck
   },
   {
     title: "Dashboard keeps it live",
-    copy: "Edit the site, upload photos, republish changes, review leads, and manage billing from one workspace.",
+    copy: "Review the draft, edit copy, upload proof, and track what still needs approval from one workspace.",
     icon: LayoutDashboard
   }
 ];
@@ -42,10 +41,10 @@ const workflow = [
 const included = [
   "Gemini-powered website plan",
   "Six-step onboarding",
-  "Hosted published site",
-  "Dashboard editing and republish",
-  "Peach Payments handoff",
-  "Lead capture and tracking fields"
+  "Supabase-backed build request",
+  "Dashboard editing and review",
+  "Publishing paused guardrails",
+  "Lead capture fields ready for launch"
 ];
 
 export default function HomePage() {
@@ -83,10 +82,10 @@ export default function HomePage() {
               Website rental for service businesses
             </div>
             <h1 className="mt-7 text-4xl font-bold leading-[1.02] tracking-tight text-foreground sm:text-5xl md:text-7xl md:leading-[0.98]">
-              Launch the first useful website tonight.
+              Create the first useful website draft tonight.
             </h1>
             <p className="mt-6 max-w-2xl text-base leading-8 text-muted-foreground md:text-lg">
-              SiteRent gives trade, local service, and appointment businesses a guided website setup, AI-assisted copy direction, hosting, billing, and a dashboard that keeps the basics moving after publish.
+              SiteRent gives trade, local service, and appointment businesses a guided website setup, AI-assisted copy direction, Supabase-backed onboarding, and a dashboard for reviewing the build before publishing is switched back on.
             </p>
             <div className="mt-8 flex flex-wrap gap-3">
               <Link href="/login?next=/builder" className="inline-flex items-center gap-2 rounded-xl bg-foreground px-5 py-3.5 text-sm font-bold text-white shadow-[0_22px_42px_rgba(15,23,42,0.2)] transition hover:bg-black">
@@ -97,15 +96,11 @@ export default function HomePage() {
                 Start onboarding
                 <ArrowRight className="size-4" />
               </Link>
-              <Link href="/onboarding?demo=1" className="inline-flex items-center gap-2 rounded-xl border border-app-line bg-white px-5 py-3.5 text-sm font-bold text-foreground transition hover:border-app-line-strong">
-                Try the demo
-                <MonitorCheck className="size-4" />
-              </Link>
             </div>
             <div className="mt-8 grid gap-3 text-sm font-semibold text-muted-foreground sm:grid-cols-3">
               <TrustItem icon={Clock3} label="Fast setup" />
               <TrustItem icon={ShieldCheck} label="POPIA-aware basics" />
-              <TrustItem icon={CreditCard} label="R300/month rental" />
+              <TrustItem icon={CreditCard} label="Billing paused for launch" />
             </div>
           </div>
 
@@ -115,8 +110,8 @@ export default function HomePage() {
 
       <section id="how-it-works" className="mx-auto max-w-7xl px-5 py-16 lg:px-8">
         <div className="max-w-2xl">
-          <p className="text-xs font-bold uppercase tracking-[0.2em] text-muted-foreground">First onboarding path</p>
-          <h2 className="mt-3 text-3xl font-bold tracking-tight md:text-4xl">Website, AI builder, and dashboard in one flow.</h2>
+          <p className="text-xs font-bold uppercase tracking-[0.2em] text-muted-foreground">Production onboarding path</p>
+          <h2 className="mt-3 text-3xl font-bold tracking-tight md:text-4xl">AI builder, Supabase onboarding, and dashboard review in one flow.</h2>
         </div>
         <div className="mt-8 grid gap-4 md:grid-cols-3">
           {workflow.map((item, index) => {
@@ -143,7 +138,7 @@ export default function HomePage() {
             <p className="text-xs font-bold uppercase tracking-[0.2em] text-muted-foreground">Dashboard basics</p>
             <h2 className="mt-3 text-3xl font-bold tracking-tight md:text-4xl">The client gets a workspace, not just a web page.</h2>
             <p className="mt-4 text-sm leading-7 text-muted-foreground">
-              After onboarding, the dashboard gives a business owner simple controls for editing copy, uploading proof, republishing, seeing leads, and keeping subscription status visible.
+              After onboarding, the dashboard gives a business owner simple controls for editing copy, uploading proof, reviewing readiness, and keeping launch blockers visible.
             </p>
             <div className="mt-6 grid gap-3">
               {included.map((item) => (
@@ -161,16 +156,16 @@ export default function HomePage() {
       <section id="pricing" className="mx-auto max-w-7xl px-5 py-16 lg:px-8">
         <div className="grid gap-6 rounded-[28px] border border-white/74 bg-white/72 p-6 shadow-[0_24px_70px_rgba(15,23,42,0.1)] ring-1 ring-white/70 backdrop-blur-2xl lg:grid-cols-[1fr_auto] lg:items-center lg:p-8">
           <div>
-            <p className="text-xs font-bold uppercase tracking-[0.2em] text-muted-foreground">Tonight-ready offer</p>
-            <h2 className="mt-3 text-3xl font-bold tracking-tight">R300/month, publishable from onboarding.</h2>
+            <p className="text-xs font-bold uppercase tracking-[0.2em] text-muted-foreground">Supabase-first rollout</p>
+            <h2 className="mt-3 text-3xl font-bold tracking-tight">Build requests now, publishing after final checks.</h2>
             <p className="mt-3 max-w-2xl text-sm leading-7 text-muted-foreground">
-              Production runs on your Supabase, Peach Payments, Vercel domain, Gemini, and tracking integrations. Missing integrations now surface as setup requirements instead of placeholder data.
+              Production now uses real Supabase and Gemini paths. Publishing, billing, and DNS actions stay paused until the launch switch is deliberately turned back on.
             </p>
           </div>
           <div className="flex flex-wrap gap-3 lg:justify-end">
             <Link href="/login?next=/builder" className="inline-flex items-center gap-2 rounded-xl bg-foreground px-5 py-3 text-sm font-bold text-white transition hover:bg-black">
               Build a draft
-              <Rocket className="size-4" />
+              <Wand2 className="size-4" />
             </Link>
             <Link href="/login?next=/dashboard" className="inline-flex items-center gap-2 rounded-xl border border-app-line bg-white px-5 py-3 text-sm font-bold text-foreground transition hover:border-app-line-strong">
               Open dashboard
@@ -234,7 +229,7 @@ function ProductPreview() {
                 <span className="rounded-full bg-[#ff5b18] px-3 py-1">Book service</span>
               </div>
               <h3 className="mt-10 max-w-sm text-3xl font-black leading-tight sm:text-4xl">Your service website, ready to review</h3>
-              <p className="mt-3 text-sm text-white/74">A publish-ready preview generated from the first setup pass.</p>
+              <p className="mt-3 text-sm text-white/74">A review-ready preview generated from the first setup pass.</p>
             </div>
             <div className="grid gap-3 p-4 sm:grid-cols-3">
               {["Services", "Trust", "Contact"].map((item) => (

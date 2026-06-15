@@ -8,6 +8,62 @@ This document is the running implementation ledger. It must be updated after eve
 
 ## Latest Pass
 
+2026-06-15:
+
+- Live Gemini/Vertex AI website creation pass:
+  - Connected the server-side Gemini helper to support both the existing `GEMINI_API_KEY` Developer API path and Google Vertex AI through Application Default Credentials.
+  - Added ADC token refresh for local `gcloud` user credentials and service-account JSON credentials, with `gcloud` access-token fallback.
+  - Changed `/api/ai/website-plan` so local `WAAS_TEST_MODE=true` only returns the deterministic test plan when no live Gemini configuration is available. With ADC present, local mode now calls Gemini.
+  - Added a Gemini response schema and Vertex-compatible `generation_config` payload so website creation plans return valid JSON matching the WAAS plan contract.
+  - Updated the Gemini model fallback so Vertex AI defaults to `gemini-2.5-flash`, avoiding the stale `.env` `gemini-2.0-flash` value unless a Vertex-specific model is explicitly set.
+  - Updated integration readiness, `.env.example`, README, and stale demo comments to document Gemini API key vs Vertex AI ADC setup.
+  - Local ADC verified for project `human-498606`; `POST /api/ai/website-plan` on `http://127.0.0.1:3000` returned a live Gemini locksmith website plan with `provider: "gemini"` and no `mode: "test"` fallback.
+  - Local paths verified on `http://127.0.0.1:3000`:
+    - `/`
+    - `/builder`
+    - `/onboarding?fromBuilder=1`
+    - `/onboarding?demo=1`
+    - `/dashboard`
+    - `/admin/integrations`
+    - `/sites/brightspark-electricians`
+  - Local test-mode APIs re-verified:
+    - `GET /api/subdomains/check?subdomain=keyguard-locksmiths`
+    - `POST /api/onboarding/save`
+    - `POST /api/peach/checkout`
+    - `POST /api/publish`
+    - `POST /api/uploads`
+  - Deployment/model follow-up:
+    - Added Vercel-friendly Vertex AI credentials via `GOOGLE_APPLICATION_CREDENTIALS_JSON` or `GOOGLE_APPLICATION_CREDENTIALS_BASE64` so production does not rely on local ADC files.
+    - Updated the default Gemini model to `gemini-3.5-flash`, while still allowing `GEMINI_MODEL` or `GEMINI_VERTEX_MODEL` overrides.
+    - Re-tested `POST /api/ai/website-plan` locally with the new default and received a live Gemini plumber website plan with `provider: "gemini"` and no test-mode fallback.
+  - Verification after the pass:
+    - `npm.cmd run typecheck` passed
+    - `npm.cmd run lint` passed with the existing onboarding raw `<img>` upload-preview warning
+    - `npm.cmd run build` passed with the same warning
+
+- Supabase-first no-demo/no-publish optimization pass:
+  - Turned local WAAS test mode off in `.env.local` and kept publishing paused with `PUBLISHING_PAUSED=true` / `NEXT_PUBLIC_PUBLISHING_PAUSED=true`.
+  - Removed the onboarding demo prefill path and deleted the stale demo sample-business constants. `/onboarding?demo=1` no longer seeds sample data; with Supabase auth active it redirects through login like normal onboarding.
+  - Reworked onboarding from payment/publish to review/submit: step 5 is a draft review, step 6 saves the build request through `/api/onboarding/save`, and no billing checkout or public publish action is started.
+  - Removed public demo CTAs and publish-success dashboard notices, then updated landing, login, tutorial, dashboard, admin, and builder copy around drafts, launch readiness, and paused publishing.
+  - Added a default-on `isPublishingPaused()` guard and applied it to `/api/publish`, `/api/publish/republish`, `/api/peach/checkout`, and admin republish actions so checkout and launch routes fail closed until explicitly re-enabled.
+  - Disabled dashboard and admin republish controls while publishing is paused.
+  - Local Supabase-first paths verified on `http://127.0.0.1:3000`:
+    - `/` returns `200`
+    - `/login` returns `200`
+    - `/builder` redirects to `/login?next=%2Fbuilder`
+    - `/onboarding` redirects to `/login?next=%2Fonboarding`
+    - `/onboarding?demo=1` redirects to `/login?next=%2Fonboarding%3Fdemo%3D1`
+    - `/dashboard` redirects to `/login?next=%2Fdashboard`
+    - `/admin` redirects to `/login?next=%2Fadmin`
+    - `/api/ai/website-plan`, `/api/onboarding/save`, `/api/peach/checkout`, and `/api/publish` return `401` without a Supabase session
+  - Browser mobile check at 390px width confirmed no horizontal overflow and no demo/publish-website copy on `/` or `/login`; protected `/onboarding?demo=1` and `/builder` showed the login redirect.
+  - Verification after the pass:
+    - `npm.cmd run typecheck` passed
+    - `npm.cmd run lint` passed with the existing onboarding raw `<img>` upload-preview warning
+    - `npm.cmd run build` passed with the same warning
+    - `SMOKE_BASE_URL=http://127.0.0.1:3000 npm.cmd run smoke` passed
+
 2026-06-14:
 
 - Mobile optimization and temporary test-mode pass:
