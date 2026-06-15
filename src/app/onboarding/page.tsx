@@ -570,14 +570,13 @@ export default function OnboardingPage() {
           </p>
         </aside>
 
-        {errors.length > 0 && (
-          <div className="rounded-md border border-red-200 bg-red-50 p-4 text-sm text-red-800 lg:col-span-3">
-            Please complete: {errors.join(", ")}.
-          </div>
-        )}
-
           <section className="stagger overflow-hidden border-[#edf0f4] bg-white p-4 sm:p-6 md:p-10 lg:border-r">
             <OnboardingMomentum step={step} percent={percent} />
+            {errors.length > 0 && (
+              <div className="mb-6 rounded-xl border border-red-200 bg-red-50 p-4 text-sm font-semibold text-red-800">
+                Please complete: {errors.join(", ")}.
+              </div>
+            )}
             {step === 0 && (
               <div className="space-y-4">
                 <StepTitle title="Business basics" copy="Pick the closest business type to load a ready-made starter template, then edit any detail to match the business." />

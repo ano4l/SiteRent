@@ -1,0 +1,49 @@
+
+> siterent-waas@0.1.0 dev
+> next dev --hostname 127.0.0.1
+
+  ▲ Next.js 14.2.35
+  - Local:        http://127.0.0.1:3000
+  - Network:      http://127.0.0.1:3000
+  - Environments: .env.local, .env
+
+ ✓ Starting...
+ ✓ Ready in 8.2s
+ ○ Compiling /src/middleware ...
+ ✓ Compiled /src/middleware in 1165ms (126 modules)
+ ○ Compiling / ...
+ ✓ Compiled / in 11.1s (575 modules)
+ GET / 200 in 12429ms
+ ✓ Compiled in 2s (272 modules)
+ ○ Compiling /api/ai/website-plan ...
+ ✓ Compiled /api/ai/website-plan in 976ms (350 modules)
+ POST /api/ai/website-plan 200 in 18743ms
+ ✓ Compiled in 2.1s (126 modules)
+ ✓ Compiled in 1173ms (272 modules)
+ ✓ Compiled in 590ms (272 modules)
+ ✓ Compiled in 527ms (272 modules)
+   Reload env: .env.local
+ ✓ Compiled in 5.6s (407 modules)
+ ✓ Compiled in 899ms (272 modules)
+ ✓ Compiled in 618ms (272 modules)
+ ✓ Compiled in 675ms (272 modules)
+ ✓ Compiled in 491ms (272 modules)
+ ✓ Compiled in 650ms (272 modules)
+ ✓ Compiled in 439ms (272 modules)
+ ✓ Compiled in 525ms (272 modules)
+ ✓ Compiled in 465ms (272 modules)
+ ✓ Compiled in 603ms (272 modules)
+ ✓ Compiled in 523ms (272 modules)
+ ✓ Compiled in 940ms (272 modules)
+ ✓ Compiled in 556ms (272 modules)
+ ✓ Compiled in 365ms (272 modules)
+ ✓ Compiled in 992ms (272 modules)
+ ✓ Compiled in 421ms (272 modules)
+ ✓ Compiled in 409ms (272 modules)
+ ✓ Compiled in 536ms (272 modules)
+ ✓ Compiled in 706ms (272 modules)
+ ✓ Compiled in 802ms (272 modules)
+ ✓ Compiled in 681ms (272 modules)
+ ✓ Compiled in 683ms (272 modules)
+ ✓ Compiled in 1295ms (272 modules)
+ ✓ Compiled in 688ms (272 modules)
