@@ -10,13 +10,18 @@ This document is the running implementation ledger. It must be updated after eve
 
 2026-06-15:
 
+- Vercel keyless Vertex AI credential pass:
+  - Rewrote `.env.example` as a complete grouped local/production template covering app origins, runtime switches, Supabase, Supabase OAuth callback setup, Vertex AI, Vercel OIDC Workload Identity Federation, Peach, email, Vercel domains, and GA4.
+  - Added `@vercel/oidc` and a Vertex AI production auth path that exchanges the Vercel OIDC token through Google STS, impersonates the configured service account, and uses the short-lived access token for Gemini website generation.
+  - Updated Gemini readiness and README setup copy so production now points at keyless Vercel OIDC/WIF credentials instead of blocked service-account key creation.
+
 - Live Gemini/Vertex AI website creation pass:
-  - Connected the server-side Gemini helper to support both the existing `GEMINI_API_KEY` Developer API path and Google Vertex AI through Application Default Credentials.
+  - Connected the server-side Gemini helper to support Google Vertex AI through Application Default Credentials.
   - Added ADC token refresh for local `gcloud` user credentials and service-account JSON credentials, with `gcloud` access-token fallback.
   - Changed `/api/ai/website-plan` so local `WAAS_TEST_MODE=true` only returns the deterministic test plan when no live Gemini configuration is available. With ADC present, local mode now calls Gemini.
   - Added a Gemini response schema and Vertex-compatible `generation_config` payload so website creation plans return valid JSON matching the WAAS plan contract.
   - Updated the Gemini model fallback so Vertex AI defaults to `gemini-2.5-flash`, avoiding the stale `.env` `gemini-2.0-flash` value unless a Vertex-specific model is explicitly set.
-  - Updated integration readiness, `.env.example`, README, and stale demo comments to document Gemini API key vs Vertex AI ADC setup.
+  - Updated integration readiness, `.env.example`, README, and stale demo comments to document Vertex AI ADC setup.
   - Local ADC verified for project `human-498606`; `POST /api/ai/website-plan` on `http://127.0.0.1:3000` returned a live Gemini locksmith website plan with `provider: "gemini"` and no `mode: "test"` fallback.
   - Local paths verified on `http://127.0.0.1:3000`:
     - `/`
@@ -33,7 +38,7 @@ This document is the running implementation ledger. It must be updated after eve
     - `POST /api/publish`
     - `POST /api/uploads`
   - Deployment/model follow-up:
-    - Added Vercel-friendly Vertex AI credentials via `GOOGLE_APPLICATION_CREDENTIALS_JSON` or `GOOGLE_APPLICATION_CREDENTIALS_BASE64` so production does not rely on local ADC files.
+    - Added Vercel-friendly Vertex AI credentials via `GOOGLE_APPLICATION_CREDENTIALS_JSON` or `GOOGLE_APPLICATION_CREDENTIALS_BASE64` so production does not rely on local ADC files. This was later superseded by the keyless Vercel OIDC/WIF path because service-account key creation is blocked in the Google Cloud organization.
     - Updated the default Gemini model to `gemini-3.5-flash`, while still allowing `GEMINI_MODEL` or `GEMINI_VERTEX_MODEL` overrides.
     - Re-tested `POST /api/ai/website-plan` locally with the new default and received a live Gemini plumber website plan with `provider: "gemini"` and no test-mode fallback.
   - Verification after the pass:
@@ -63,6 +68,34 @@ This document is the running implementation ledger. It must be updated after eve
     - `npm.cmd run lint` passed with the existing onboarding raw `<img>` upload-preview warning
     - `npm.cmd run build` passed with the same warning
     - `SMOKE_BASE_URL=http://127.0.0.1:3000 npm.cmd run smoke` passed
+
+- Supabase Auth and Google OAuth activation pass:
+  - Added `NEXT_PUBLIC_AUTH_REDIRECT_ORIGIN` so local and hosted OAuth callbacks can use a stable app origin instead of whichever host was used to open the dev server.
+  - Added `/api/auth/readiness` to read the active Supabase Auth provider settings and report email/Google readiness plus the exact Supabase callback URL.
+  - Updated `/login` to fetch auth readiness, keep the Google button enabled only when Supabase reports Google is active, and show setup guidance if the provider is disabled.
+  - Updated `/auth/callback` to preserve Supabase OAuth error descriptions instead of collapsing provider failures into a generic missing-code error.
+  - Changed middleware session validation to `supabase.auth.getUser()` for reliable server-side validation against the active Supabase project.
+  - Confirmed the active Supabase project reports `emailEnabled: true` and `googleEnabled: true` through `GET /api/auth/readiness`.
+  - Confirmed Supabase Google OAuth URL generation hands off to `accounts.google.com` with redirect target `http://localhost:3000/auth/callback?next=%2Fbuilder`.
+  - Browser check confirmed `/login?next=%2Fbuilder` renders an enabled `Continue with Google` button and no Google setup warning.
+  - Verification after the pass:
+    - `npm.cmd run typecheck` passed
+    - `npm.cmd run lint` passed with the existing onboarding raw `<img>` upload-preview warning
+    - `npm.cmd run build` passed with the same warning
+    - `SMOKE_BASE_URL=http://127.0.0.1:3000 npm.cmd run smoke` passed
+
+- Vertex AI ADC-only Gemini pass:
+  - Removed the non-ADC Gemini runtime path from `src/lib/gemini.ts`; website planning now builds Vertex-compatible requests and calls Vertex AI with ADC access tokens only.
+  - Removed the old key/provider Gemini environment variables from `.env.example`, README setup, and integration readiness.
+  - Updated Gemini readiness to require a Vertex AI project plus ADC credentials instead of accepting a key-based provider.
+  - Kept local `gcloud auth application-default login`; Vercel production is now expected to use keyless OIDC/WIF rather than service-account key files.
+  - Confirmed local ADC is available for Google Cloud project `human-498606`.
+  - Production ADC could not be confirmed from this checkout because the Vercel CLI reports the codebase is not linked to a Vercel project. Production now needs `GOOGLE_CLOUD_PROJECT`, `GOOGLE_CLOUD_LOCATION`, and the Vercel OIDC/WIF variables set in Vercel.
+  - Verification after the pass:
+    - Targeted source search found no remaining non-ADC Gemini runtime references.
+    - `npm.cmd run typecheck` passed
+    - `npm.cmd run lint` passed with the existing onboarding raw `<img>` upload-preview warning
+    - `npm.cmd run build` passed with the same warning
 
 2026-06-14:
 
@@ -178,7 +211,7 @@ This document is the running implementation ledger. It must be updated after eve
   - Removed local/sample published-site fallbacks so missing Supabase configuration surfaces as setup-required state instead of showing sample customer data.
   - Removed fake dashboard analytics, leads, billing history, database records, card details, review ratings, and published-site trust claims.
   - Added file and image attachment upload support to the AI website builder, admin AI studio, and dashboard AI side chat.
-  - `GEMINI_API_KEY` is now required for AI website planning in production mode.
+  - Vertex AI ADC is now required for AI website planning in production mode.
 
 - Tonight onboarding basics pass:
   - Restored `/` as a public SiteRent website instead of redirecting straight to login.
@@ -295,8 +328,8 @@ This document is the running implementation ledger. It must be updated after eve
   - Added server-side Gemini REST helper for structured website creation/restyle plans.
   - Added `/api/ai/website-plan`.
   - Added an admin Gemini Website Assistant panel for creating or restyling sites across the five template languages.
-  - Added local fallback output when `GEMINI_API_KEY` is not configured.
-  - Added `GEMINI_API_KEY` and `GEMINI_MODEL` to `.env.example`.
+  - Added local fallback output when live Gemini is not configured.
+  - Added Gemini model configuration to `.env.example`.
   - Verification after the pass:
     - `npm run typecheck` passed
     - `npm run build` passed with the existing onboarding image optimization warning only

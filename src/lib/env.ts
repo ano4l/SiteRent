@@ -2,6 +2,17 @@ export function getSupabasePublishableKey() {
   return process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY ?? process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 }
 
+export function getAuthRedirectOrigin() {
+  const value = process.env.NEXT_PUBLIC_AUTH_REDIRECT_ORIGIN ?? process.env.NEXT_PUBLIC_SITE_URL;
+  if (!value) return null;
+
+  try {
+    return new URL(value).origin;
+  } catch {
+    return null;
+  }
+}
+
 export function isWaasTestMode() {
   const value = process.env.WAAS_TEST_MODE ?? process.env.NEXT_PUBLIC_WAAS_TEST_MODE ?? "";
   return ["1", "true", "yes", "on"].includes(value.toLowerCase());

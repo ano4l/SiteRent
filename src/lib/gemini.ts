@@ -6,9 +6,10 @@ import path from "node:path";
 import { promisify } from "node:util";
 import { z } from "zod";
 
-const GEMINI_API_BASE = "https://generativelanguage.googleapis.com/v1beta";
 const VERTEX_AI_API_BASE = "https://aiplatform.googleapis.com/v1";
 const GOOGLE_OAUTH_TOKEN_URL = "https://oauth2.googleapis.com/token";
+const GOOGLE_STS_TOKEN_URL = "https://sts.googleapis.com/v1/token";
+const IAM_CREDENTIALS_API_BASE = "https://iamcredentials.googleapis.com/v1";
 const GOOGLE_CLOUD_SCOPE = "https://www.googleapis.com/auth/cloud-platform";
 const execFileAsync = promisify(execFile);
 const templateStyleKeys = ["aireco-dark", "eircool-editorial", "razor-minimal", "coolair-blue"] as const;
@@ -193,14 +194,10 @@ type GeminiResponse = {
   };
 };
 
-type GeminiProvider = "api-key" | "vertex-ai";
-
 type GeminiRuntimeConfig = {
-  provider: GeminiProvider;
   model: string;
-  apiKey?: string;
-  projectId?: string;
-  location?: string;
+  projectId: string;
+  location: string;
 };
 
 type AdcCredentials = {
@@ -215,12 +212,28 @@ type AdcCredentials = {
   token_uri?: string;
 };
 
+type VercelWifConfig = {
+  projectId: string;
+  projectNumber: string;
+  serviceAccountEmail: string;
+  poolId: string;
+  providerId: string;
+};
+
 type OAuthTokenResponse = {
   access_token?: string;
   expires_in?: number;
   token_type?: string;
   error?: string;
   error_description?: string;
+};
+
+type IamAccessTokenResponse = {
+  accessToken?: string;
+  expireTime?: string;
+  error?: {
+    message?: string;
+  };
 };
 
 type CachedToken = {
@@ -236,20 +249,18 @@ export function hasGeminiConfig() {
 
 export function getGeminiMissingConfig() {
   return [
-    "GEMINI_API_KEY or Vertex AI ADC with a Google Cloud project/quota project"
+    "Vertex AI project plus local ADC, a Google credentials file, or Vercel GCP Workload Identity Federation variables"
   ];
 }
 
 export async function generateWebsitePlan(input: GenerateWebsitePlanInput): Promise<AiWebsitePlan> {
   const config = await resolveGeminiConfig();
   if (!config) {
-    throw new Error("Gemini is not configured. Add GEMINI_API_KEY or connect Vertex AI ADC with a Google Cloud project.");
+    throw new Error("Gemini is not configured. Connect Vertex AI ADC with a Google Cloud project.");
   }
 
-  const body = buildGenerateContentBody(input, config.provider);
-  const response = config.provider === "api-key"
-    ? await callGeminiDeveloperApi(config, body)
-    : await callVertexAi(config, body);
+  const body = buildGenerateContentBody(input);
+  const response = await callVertexAi(config, body);
 
   const result = (await response.json()) as GeminiResponse;
   if (!response.ok) {
@@ -273,7 +284,7 @@ export async function generateWebsitePlan(input: GenerateWebsitePlanInput): Prom
   return parsed.data;
 }
 
-function buildGenerateContentBody(input: GenerateWebsitePlanInput, provider: GeminiProvider) {
+function buildGenerateContentBody(input: GenerateWebsitePlanInput) {
   const parts: Array<Record<string, unknown>> = [
     {
       text: buildWebsitePrompt(input)
@@ -312,29 +323,11 @@ function buildGenerateContentBody(input: GenerateWebsitePlanInput, provider: Gem
         parts
       }
     ],
-    [provider === "vertex-ai" ? "generation_config" : "generationConfig"]: generationConfig
+    generation_config: generationConfig
   };
 }
 
-async function callGeminiDeveloperApi(config: GeminiRuntimeConfig, body: Record<string, unknown>) {
-  if (!config.apiKey) {
-    throw new Error("GEMINI_API_KEY is required for the Gemini Developer API.");
-  }
-
-  return fetch(`${GEMINI_API_BASE}/models/${config.model}:generateContent?key=${config.apiKey}`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json"
-    },
-    body: JSON.stringify(body)
-  });
-}
-
 async function callVertexAi(config: GeminiRuntimeConfig, body: Record<string, unknown>) {
-  if (!config.projectId || !config.location) {
-    throw new Error("GOOGLE_CLOUD_PROJECT and GOOGLE_CLOUD_LOCATION are required for Vertex AI Gemini.");
-  }
-
   const accessToken = await getVertexAccessToken();
   const encodedModel = encodeURIComponent(config.model);
   return fetch(
@@ -367,23 +360,12 @@ function parseJsonResponse(text: string) {
 }
 
 function resolveGeminiConfigSync(): GeminiRuntimeConfig | null {
-  const forcedProvider = getForcedProvider();
-  const apiKey = readEnv("GEMINI_API_KEY");
-
-  if (forcedProvider === "api-key") {
-    return apiKey ? { provider: "api-key", apiKey, model: getGeminiModel("api-key") } : null;
-  }
-
-  if (!forcedProvider && apiKey) {
-    return { provider: "api-key", apiKey, model: getGeminiModel("api-key") };
-  }
-
   const adc = readAdcCredentials();
+  const wif = getVercelWifConfig();
   const projectId = getVertexProjectIdSync(adc);
-  if (projectId && (adc || forcedProvider === "vertex-ai")) {
+  if (projectId && (adc || wif)) {
     return {
-      provider: "vertex-ai",
-      model: getGeminiModel("vertex-ai"),
+      model: getGeminiModel(),
       projectId,
       location: getVertexLocation()
     };
@@ -396,37 +378,21 @@ async function resolveGeminiConfig(): Promise<GeminiRuntimeConfig | null> {
   const config = resolveGeminiConfigSync();
   if (config) return config;
 
-  const forcedProvider = getForcedProvider();
-  if (forcedProvider === "api-key") return null;
-
   const projectId = await getGcloudProjectId();
   if (!projectId) return null;
 
   return {
-    provider: "vertex-ai",
-    model: getGeminiModel("vertex-ai"),
+    model: getGeminiModel(),
     projectId,
     location: getVertexLocation()
   };
 }
 
-function getForcedProvider(): GeminiProvider | null {
-  const provider = readEnv("GEMINI_PROVIDER")?.toLowerCase();
-  if (!provider) return null;
-  if (["api-key", "developer-api", "gemini-api"].includes(provider)) return "api-key";
-  if (["vertex", "vertex-ai", "adc", "google-cloud"].includes(provider)) return "vertex-ai";
-  return null;
-}
-
-function getGeminiModel(provider: GeminiProvider) {
-  if (provider === "vertex-ai") {
-    const vertexModel = readEnv("GEMINI_VERTEX_MODEL");
-    const sharedModel = readEnv("GEMINI_MODEL");
-    if (vertexModel) return vertexModel;
-    return sharedModel && sharedModel !== "gemini-2.0-flash" ? sharedModel : "gemini-3.5-flash";
-  }
-
-  return readEnv("GEMINI_MODEL") ?? "gemini-3.5-flash";
+function getGeminiModel() {
+  const vertexModel = readEnv("GEMINI_VERTEX_MODEL");
+  const sharedModel = readEnv("GEMINI_MODEL");
+  if (vertexModel) return vertexModel;
+  return sharedModel && sharedModel !== "gemini-2.0-flash" ? sharedModel : "gemini-3.5-flash";
 }
 
 function getVertexLocation() {
@@ -436,6 +402,7 @@ function getVertexLocation() {
 function getVertexProjectIdSync(adc?: AdcCredentials | null) {
   return readEnv("GEMINI_VERTEX_PROJECT")
     ?? readEnv("GOOGLE_CLOUD_PROJECT")
+    ?? readEnv("GCP_PROJECT_ID")
     ?? readEnv("GCLOUD_PROJECT")
     ?? adc?.quota_project_id?.trim()
     ?? adc?.project_id?.trim()
@@ -455,6 +422,11 @@ async function getVertexAccessToken() {
 
   if (adc?.type === "service_account") {
     return refreshServiceAccountToken(adc);
+  }
+
+  const vercelWif = getVercelWifConfig();
+  if (vercelWif) {
+    return refreshVercelWifToken(vercelWif);
   }
 
   return getGcloudAccessToken();
@@ -529,6 +501,65 @@ async function refreshServiceAccountToken(adc: AdcCredentials) {
   return result.access_token;
 }
 
+async function refreshVercelWifToken(config: VercelWifConfig) {
+  const subjectToken = await getVercelOidcSubjectToken();
+  const audience = `//iam.googleapis.com/projects/${config.projectNumber}/locations/global/workloadIdentityPools/${config.poolId}/providers/${config.providerId}`;
+  const stsResponse = await fetch(GOOGLE_STS_TOKEN_URL, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/x-www-form-urlencoded"
+    },
+    body: new URLSearchParams({
+      grant_type: "urn:ietf:params:oauth:grant-type:token-exchange",
+      audience,
+      scope: GOOGLE_CLOUD_SCOPE,
+      requested_token_type: "urn:ietf:params:oauth:token-type:access_token",
+      subject_token_type: "urn:ietf:params:oauth:token-type:jwt",
+      subject_token: subjectToken
+    })
+  });
+  const stsResult = (await stsResponse.json()) as OAuthTokenResponse;
+
+  if (!stsResponse.ok || !stsResult.access_token) {
+    throw new Error(stsResult.error_description ?? stsResult.error ?? "Unable to exchange the Vercel OIDC token for Google STS credentials.");
+  }
+
+  const impersonationResponse = await fetch(
+    `${IAM_CREDENTIALS_API_BASE}/projects/-/serviceAccounts/${encodeURIComponent(config.serviceAccountEmail)}:generateAccessToken`,
+    {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${stsResult.access_token}`,
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        scope: [GOOGLE_CLOUD_SCOPE],
+        lifetime: "3600s"
+      })
+    }
+  );
+  const impersonationResult = (await impersonationResponse.json()) as IamAccessTokenResponse;
+
+  if (!impersonationResponse.ok || !impersonationResult.accessToken) {
+    throw new Error(impersonationResult.error?.message ?? "Unable to impersonate the Vertex AI service account.");
+  }
+
+  cachedVertexToken = {
+    token: impersonationResult.accessToken,
+    expiresAt: impersonationResult.expireTime ? Date.parse(impersonationResult.expireTime) : Date.now() + 3600 * 1000
+  };
+  return impersonationResult.accessToken;
+}
+
+async function getVercelOidcSubjectToken() {
+  try {
+    const { getVercelOidcToken } = await import("@vercel/oidc");
+    return getVercelOidcToken();
+  } catch {
+    throw new Error("Unable to read the Vercel OIDC token. This auth path only works inside a Vercel deployment with OIDC enabled.");
+  }
+}
+
 async function getGcloudAccessToken() {
   const token = await runGcloud(["auth", "print-access-token"]);
   if (!token) {
@@ -545,6 +576,26 @@ async function getGcloudAccessToken() {
 async function getGcloudProjectId() {
   const projectId = await runGcloud(["config", "get-value", "project"]);
   return projectId && projectId !== "(unset)" ? projectId : null;
+}
+
+function getVercelWifConfig(): VercelWifConfig | null {
+  const projectId = readEnv("GCP_PROJECT_ID") ?? readEnv("GOOGLE_CLOUD_PROJECT") ?? readEnv("GEMINI_VERTEX_PROJECT");
+  const projectNumber = readEnv("GCP_PROJECT_NUMBER");
+  const serviceAccountEmail = readEnv("GCP_SERVICE_ACCOUNT_EMAIL");
+  const poolId = readEnv("GCP_WORKLOAD_IDENTITY_POOL_ID");
+  const providerId = readEnv("GCP_WORKLOAD_IDENTITY_POOL_PROVIDER_ID");
+
+  if (!projectId || !projectNumber || !serviceAccountEmail || !poolId || !providerId) {
+    return null;
+  }
+
+  return {
+    projectId,
+    projectNumber,
+    serviceAccountEmail,
+    poolId,
+    providerId
+  };
 }
 
 async function runGcloud(args: string[]) {

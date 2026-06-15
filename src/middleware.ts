@@ -87,8 +87,8 @@ export async function middleware(request: NextRequest) {
     }
   );
 
-  const { data: claimsData, error: claimsError } = await supabase.auth.getClaims();
-  const isAuthenticated = Boolean(!claimsError && claimsData?.claims?.sub);
+  const { data: userData, error: userError } = await supabase.auth.getUser();
+  const isAuthenticated = Boolean(!userError && userData.user?.id);
 
   if (protectedRoute && !isAuthenticated) {
     if (isProtectedApi(pathname)) {

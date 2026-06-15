@@ -141,11 +141,11 @@ export function getIntegrationReadiness(): IntegrationReadinessItem[] {
       description: "AI website planning for the builder, admin studio, and dashboard assistant, including file and image context.",
       launchCritical: true,
       requirements: [
-        { label: "Gemini Developer API key", keys: ["GEMINI_API_KEY"] },
-        { label: "Vertex AI ADC project", keys: ["GOOGLE_CLOUD_PROJECT", "GEMINI_VERTEX_PROJECT"], mode: "any" }
+        { label: "Vertex AI project", keys: ["GOOGLE_CLOUD_PROJECT", "GCP_PROJECT_ID", "GEMINI_VERTEX_PROJECT"], mode: "any" },
+        { label: "Local ADC or Vercel WIF credentials", keys: ["GOOGLE_APPLICATION_CREDENTIALS", "GOOGLE_APPLICATION_CREDENTIALS_JSON", "GOOGLE_APPLICATION_CREDENTIALS_BASE64", "GCP_PROJECT_NUMBER", "GCP_SERVICE_ACCOUNT_EMAIL", "GCP_WORKLOAD_IDENTITY_POOL_ID", "GCP_WORKLOAD_IDENTITY_POOL_PROVIDER_ID"], mode: "any" }
       ],
-      evidence: ["The AI route uses live Gemini when an API key or Vertex AI ADC is available.", "Attachment validation limits size and accepted MIME types."],
-      nextStep: "Add a Gemini key or connect Vertex AI ADC, keep the model pinned, and run one create-site and one restyle request in staging.",
+      evidence: ["The AI route uses live Gemini through Vertex AI only.", "Vercel production can authenticate keylessly through OIDC Workload Identity Federation.", "Attachment validation limits size and accepted MIME types."],
+      nextStep: "Connect local ADC or Vercel OIDC Workload Identity Federation, keep the model pinned, and run one create-site and one restyle request in staging.",
       readyLabel: "AI configured",
       statusOverride: geminiConfigured ? "ready" : undefined,
       missingOverride: geminiConfigured ? [] : getGeminiMissingConfig()

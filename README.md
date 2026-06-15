@@ -73,13 +73,26 @@ Copy `.env.example` to `.env.local` and fill in Supabase, Peach Payments sandbox
 
 Publishing is intentionally paused in this rollout. Keep `PUBLISHING_PAUSED=true` and `NEXT_PUBLIC_PUBLISHING_PAUSED=true` until the Supabase, billing, DNS, and launch checks are ready; the publish APIs return setup-paused responses while the flag is on.
 
-Gemini website planning supports either:
+Gemini website planning uses Vertex AI only. Set `GEMINI_MODEL=gemini-3.5-flash`, `GOOGLE_CLOUD_PROJECT`, and `GOOGLE_CLOUD_LOCATION=global`, then run `gcloud auth application-default login` locally and enable `aiplatform.googleapis.com`.
 
-- `GEMINI_API_KEY` for the Gemini Developer API.
-- Vertex AI through Google Application Default Credentials. Set `GEMINI_PROVIDER=vertex-ai`, `GEMINI_MODEL=gemini-3.5-flash`, `GOOGLE_CLOUD_PROJECT`, and `GOOGLE_CLOUD_LOCATION=global`, then run `gcloud auth application-default login` locally and enable `aiplatform.googleapis.com`.
-- On Vercel, local ADC is not available. Use `GEMINI_API_KEY`, or store service-account JSON in `GOOGLE_APPLICATION_CREDENTIALS_JSON` or base64-encoded JSON in `GOOGLE_APPLICATION_CREDENTIALS_BASE64`.
+On Vercel, use keyless Google Cloud Workload Identity Federation instead of a service-account JSON key. Configure the Vercel OIDC provider in Google Cloud, grant the service account `roles/aiplatform.user`, grant the Vercel principal `roles/iam.workloadIdentityUser`, then set `GCP_PROJECT_ID`, `GCP_PROJECT_NUMBER`, `GCP_SERVICE_ACCOUNT_EMAIL`, `GCP_WORKLOAD_IDENTITY_POOL_ID`, and `GCP_WORKLOAD_IDENTITY_POOL_PROVIDER_ID` in Vercel.
 
-Supabase Auth is required before users can access `/builder`, `/onboarding`, `/dashboard`, `/admin`, `/tutorial`, or production action APIs. Configure Google as an OAuth provider in Supabase and allow `/auth/callback` as a redirect URL.
+Supabase Auth is required before users can access `/builder`, `/onboarding`, `/dashboard`, `/admin`, `/tutorial`, or production action APIs. Set `NEXT_PUBLIC_AUTH_REDIRECT_ORIGIN` to the app origin Supabase should redirect back to, for example `http://localhost:3000` locally or the production Vercel URL in production.
+
+For Google OAuth, enable Google under Supabase Auth Providers. In Google Cloud, add the Supabase callback URL as the OAuth redirect URI:
+
+```text
+https://lyoalvcgibdhbolwobdo.supabase.co/auth/v1/callback
+```
+
+In Supabase Auth URL configuration, allow the app callback URL:
+
+```text
+http://localhost:3000/auth/callback
+https://your-vercel-domain/auth/callback
+```
+
+The login page reads `/api/auth/readiness` and disables the Google button with setup guidance until Supabase reports the Google provider is enabled.
 
 ## Production Notes
 

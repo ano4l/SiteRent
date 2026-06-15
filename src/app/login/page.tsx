@@ -3,13 +3,21 @@
 import Link from "next/link";
 import { CheckCircle2, LayoutGrid, LockKeyhole, Mail, Sparkles } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
-import { hasSupabaseBrowserConfig, isWaasTestMode } from "@/lib/env";
+import { getAuthRedirectOrigin, hasSupabaseBrowserConfig, isWaasTestMode } from "@/lib/env";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Field } from "@/components/ui/input";
 
 type AuthMode = "sign-in" | "register";
 type AuthStatus = "idle" | "submitting" | "sent" | "error" | "config-missing" | "oauth";
+type AuthReadiness = {
+  configured: boolean;
+  emailEnabled: boolean | null;
+  googleEnabled: boolean | null;
+  redirectOrigin?: string;
+  supabaseCallbackUrl?: string;
+  error?: string;
+};
 
 type LoginPageProps = {
   searchParams?: {
@@ -37,6 +45,7 @@ export default function LoginPage({ searchParams }: LoginPageProps) {
   const [password, setPassword] = useState("");
   const [status, setStatus] = useState<AuthStatus>(() => getInitialAuthStatus(searchParams));
   const [message, setMessage] = useState(() => buildInitialAuthMessage(searchParams));
+  const [authReadiness, setAuthReadiness] = useState<AuthReadiness | null>(null);
   const [nextPath, setNextPath] = useState(() => {
     const requestedNext = searchParams?.next;
     return requestedNext?.startsWith("/") && !requestedNext.startsWith("//") ? requestedNext : "/dashboard";
@@ -58,6 +67,31 @@ export default function LoginPage({ searchParams }: LoginPageProps) {
     }
   }, []);
 
+  useEffect(() => {
+    if (testMode || !hasSupabaseBrowserConfig()) return;
+
+    let isMounted = true;
+    fetch("/api/auth/readiness", { cache: "no-store" })
+      .then((response) => response.json() as Promise<AuthReadiness>)
+      .then((readiness) => {
+        if (isMounted) setAuthReadiness(readiness);
+      })
+      .catch(() => {
+        if (isMounted) {
+          setAuthReadiness({
+            configured: true,
+            emailEnabled: null,
+            googleEnabled: null,
+            error: "Unable to confirm Supabase Auth provider settings."
+          });
+        }
+      });
+
+    return () => {
+      isMounted = false;
+    };
+  }, [testMode]);
+
   const title = testMode
     ? "SiteRent test mode is on."
     : mode === "register"
@@ -69,9 +103,11 @@ export default function LoginPage({ searchParams }: LoginPageProps) {
       ? "Register before using the builder, onboarding, dashboard, or admin tools."
       : "Access is locked to authenticated users so production client work stays tied to a real account.";
   const submitting = status === "submitting" || status === "oauth";
+  const googleDisabled = !testMode && authReadiness?.googleEnabled === false;
   const redirectTo = useMemo(() => {
     if (typeof window === "undefined") return "/auth/callback";
-    return `${window.location.origin}/auth/callback?next=${encodeURIComponent(nextPath)}`;
+    const origin = getAuthRedirectOrigin() ?? window.location.origin;
+    return `${origin}/auth/callback?next=${encodeURIComponent(nextPath)}`;
   }, [nextPath]);
 
   function requireSupabase() {
@@ -185,6 +221,12 @@ export default function LoginPage({ searchParams }: LoginPageProps) {
 
     if (!requireSupabase()) return;
 
+    if (googleDisabled) {
+      setStatus("error");
+      setMessage("Google OAuth is not enabled in Supabase yet.");
+      return;
+    }
+
     setStatus("oauth");
     setMessage("");
     const supabase = createSupabaseBrowserClient();
@@ -293,9 +335,9 @@ export default function LoginPage({ searchParams }: LoginPageProps) {
             </div>
 
             <div className="grid gap-3">
-              <Button variant="secondary" disabled={submitting} onClick={signInWithGoogle} className="w-full">
+              <Button variant="secondary" disabled={submitting || googleDisabled} onClick={signInWithGoogle} className="w-full">
                 <GoogleLogo />
-                Continue with Google
+                {googleDisabled ? "Google OAuth disabled in Supabase" : "Continue with Google"}
               </Button>
               <Button variant="subtle" disabled={submitting} onClick={sendMagicLink} className="w-full">
                 <Mail size={18} />
@@ -304,6 +346,14 @@ export default function LoginPage({ searchParams }: LoginPageProps) {
             </div>
 
             <div role="status" aria-live="polite">
+              {googleDisabled && (
+                <p className="mt-4 rounded-xl border border-amber-200 bg-amber-50 p-3 text-sm font-semibold leading-6 text-amber-800">
+                  Enable Google in Supabase Auth providers. Use Google callback URL{" "}
+                  <span className="font-mono text-xs">{authReadiness?.supabaseCallbackUrl ?? "your Supabase /auth/v1/callback URL"}</span>{" "}
+                  and allow app redirect{" "}
+                  <span className="font-mono text-xs">{authReadiness?.redirectOrigin ?? "your SiteRent origin"}/auth/callback</span>.
+                </p>
+              )}
               {message && (
                 <p className={`mt-4 rounded-xl p-3 text-sm font-semibold ${status === "error" || status === "config-missing" ? "bg-red-50 text-red-700" : "bg-blue-50 text-blue-700"}`}>
                   {message}
@@ -314,7 +364,7 @@ export default function LoginPage({ searchParams }: LoginPageProps) {
           </div>
 
           <div className="grid gap-3 text-sm text-muted-foreground md:grid-cols-3">
-            {(testMode ? ["Test data", "No database required", "Protected routes bypassed"] : ["Supabase Auth", "Google OAuth", "Protected workspace"]).map((item) => (
+            {(testMode ? ["Test data", "No database required", "Protected routes bypassed"] : ["Supabase Auth", googleDisabled ? "Google setup needed" : "Google OAuth", "Protected workspace"]).map((item) => (
               <span key={item} className="inline-flex items-center gap-2">
                 <CheckCircle2 className="size-4 text-blue-600" />
                 {item}

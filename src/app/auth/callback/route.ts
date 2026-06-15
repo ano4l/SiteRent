@@ -14,6 +14,7 @@ export async function GET(request: Request) {
   const requestUrl = new URL(request.url);
   const code = requestUrl.searchParams.get("code");
   const next = requestUrl.searchParams.get("next");
+  const callbackError = requestUrl.searchParams.get("error_description") ?? requestUrl.searchParams.get("error");
   const safeNext = next?.startsWith("/") && !next.startsWith("//") ? next : "/dashboard";
 
   if (isWaasTestMode()) {
@@ -27,6 +28,10 @@ export async function GET(request: Request) {
       "Supabase Auth is not configured yet.",
       getMissingSupabaseBrowserConfig()
     );
+  }
+
+  if (callbackError) {
+    return buildLoginRedirect(requestUrl, safeNext, callbackError);
   }
 
   if (!code) {

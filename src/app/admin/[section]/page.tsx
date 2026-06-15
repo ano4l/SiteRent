@@ -138,7 +138,7 @@ const sections: Record<string, AdminSectionConfig> = {
       { title: "Service credentials", copy: "Gemini, payment, Vercel, and email credentials are setup-required before their production actions run.", status: "Fail-closed" },
       { title: "Workspace settings", copy: "Client settings save through authenticated dashboard APIs.", status: "Session-gated" }
     ],
-    checklist: ["Add Supabase keys", "Configure Google OAuth", "Add Gemini key", "Add payment and Vercel credentials"]
+    checklist: ["Add Supabase keys", "Configure Google OAuth", "Connect Vertex AI ADC", "Add payment and Vercel credentials"]
   },
   security: {
     title: "Security Operations",
