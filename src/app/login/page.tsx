@@ -43,6 +43,8 @@ export default function LoginPage({ searchParams }: LoginPageProps) {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [otpCode, setOtpCode] = useState("");
+  const [otpSentTo, setOtpSentTo] = useState("");
   const [status, setStatus] = useState<AuthStatus>(() => getInitialAuthStatus(searchParams));
   const [message, setMessage] = useState(() => buildInitialAuthMessage(searchParams));
   const [authReadiness, setAuthReadiness] = useState<AuthReadiness | null>(null);
@@ -142,7 +144,6 @@ export default function LoginPage({ searchParams }: LoginPageProps) {
         email,
         password,
         options: {
-          emailRedirectTo: redirectTo,
           data: {
             full_name: name
           }
@@ -161,7 +162,7 @@ export default function LoginPage({ searchParams }: LoginPageProps) {
       }
 
       setStatus("sent");
-      setMessage("Check your email to confirm the account, then return to SiteRent.");
+      setMessage("Account created, but Supabase still requires email confirmation. Turn off Confirm Email in Supabase Auth to allow immediate signup.");
       return;
     }
 
@@ -179,7 +180,7 @@ export default function LoginPage({ searchParams }: LoginPageProps) {
     window.location.assign(nextPath);
   }
 
-  async function sendMagicLink() {
+  async function sendOtpCode() {
     if (testMode) {
       continueInTestMode();
       return;
@@ -199,7 +200,7 @@ export default function LoginPage({ searchParams }: LoginPageProps) {
     const { error } = await supabase.auth.signInWithOtp({
       email,
       options: {
-        emailRedirectTo: redirectTo
+        shouldCreateUser: true
       }
     });
 
@@ -210,7 +211,46 @@ export default function LoginPage({ searchParams }: LoginPageProps) {
     }
 
     setStatus("sent");
-    setMessage("Check your email for the secure sign-in link.");
+    setOtpSentTo(email);
+    setMessage("Check your email for the one-time code, then enter it here.");
+  }
+
+  async function verifyOtpCode() {
+    if (testMode) {
+      continueInTestMode();
+      return;
+    }
+
+    if (!otpSentTo) {
+      setStatus("error");
+      setMessage("Request a one-time code first.");
+      return;
+    }
+
+    if (!otpCode.trim()) {
+      setStatus("error");
+      setMessage("Enter the one-time code from your email.");
+      return;
+    }
+
+    if (!requireSupabase()) return;
+
+    setStatus("submitting");
+    setMessage("");
+    const supabase = createSupabaseBrowserClient();
+    const { error } = await supabase.auth.verifyOtp({
+      email: otpSentTo,
+      token: otpCode.trim(),
+      type: "email"
+    });
+
+    if (error) {
+      setStatus("error");
+      setMessage(error.message);
+      return;
+    }
+
+    window.location.assign(nextPath);
   }
 
   async function signInWithGoogle() {
@@ -339,11 +379,28 @@ export default function LoginPage({ searchParams }: LoginPageProps) {
                 <GoogleLogo />
                 {googleDisabled ? "Google OAuth disabled in Supabase" : "Continue with Google"}
               </Button>
-              <Button variant="subtle" disabled={submitting} onClick={sendMagicLink} className="w-full">
+              <Button variant="subtle" disabled={submitting} onClick={sendOtpCode} className="w-full">
                 <Mail size={18} />
-                Email me a secure sign-in link
+                Email me a one-time code
               </Button>
             </div>
+
+            {otpSentTo && (
+              <div className="mt-4 rounded-2xl border border-app-line bg-app-surface p-4">
+                <Field
+                  label="One-time email code"
+                  inputMode="numeric"
+                  autoComplete="one-time-code"
+                  value={otpCode}
+                  onChange={(event) => setOtpCode(event.target.value)}
+                  placeholder="123456"
+                  hint={`Sent to ${otpSentTo}. If the email shows a link instead of a code, update the Supabase Magic Link or OTP template to include {{ .Token }}.`}
+                />
+                <Button type="button" disabled={submitting} onClick={verifyOtpCode} className="mt-3 w-full">
+                  Verify code
+                </Button>
+              </div>
+            )}
 
             <div role="status" aria-live="polite">
               {googleDisabled && (

@@ -79,6 +79,10 @@ On Vercel, use keyless Google Cloud Workload Identity Federation instead of a se
 
 Supabase Auth is required before users can access `/builder`, `/onboarding`, `/dashboard`, `/admin`, `/tutorial`, or production action APIs. Set `NEXT_PUBLIC_AUTH_REDIRECT_ORIGIN` to the app origin Supabase should redirect back to, for example `http://localhost:3000` locally or the production Vercel URL in production.
 
+For the current signup flow, disable email confirmation in Supabase: Authentication -> Providers -> Email -> Confirm Email off. With confirmation disabled, email/password signup creates a session immediately and sends the user to the requested workspace.
+
+The login page also supports Supabase email OTP codes. In Supabase, edit Authentication -> Email Templates -> Magic Link or OTP so the email includes `{{ .Token }}` instead of only a magic-link `{{ .ConfirmationURL }}`. The app sends `signInWithOtp`, then verifies the user-entered code with `verifyOtp`.
+
 For Google OAuth, enable Google under Supabase Auth Providers. In Google Cloud, add the Supabase callback URL as the OAuth redirect URI:
 
 ```text

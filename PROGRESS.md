@@ -10,6 +10,11 @@ This document is the running implementation ledger. It must be updated after eve
 
 2026-06-15:
 
+- Supabase signup and OTP login pass:
+  - Removed the signup-time email redirect from the email/password registration path so the app works cleanly when Supabase Confirm Email is turned off.
+  - Added an email OTP code flow on `/login`: users can request a one-time code, enter it in the page, and the client verifies it with Supabase `verifyOtp` before opening the requested workspace.
+  - Updated README and `.env.example` to document turning off Supabase Confirm Email for immediate signup and changing the Magic Link or OTP template to include `{{ .Token }}` for code-based OTP.
+
 - Vercel keyless Vertex AI credential pass:
   - Rewrote `.env.example` as a complete grouped local/production template covering app origins, runtime switches, Supabase, Supabase OAuth callback setup, Vertex AI, Vercel OIDC Workload Identity Federation, Peach, email, Vercel domains, and GA4.
   - Added `@vercel/oidc` and a Vertex AI production auth path that exchanges the Vercel OIDC token through Google STS, impersonates the configured service account, and uses the short-lived access token for Gemini website generation.
