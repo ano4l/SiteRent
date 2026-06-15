@@ -10,6 +10,15 @@ This document is the running implementation ledger. It must be updated after eve
 
 2026-06-15:
 
+- Dashboard sidebar fixed-position pass:
+  - Removed the `ui-enter` transform wrapper from the selected dashboard workspace because transformed ancestors make fixed sidebars behave like they are fixed to the scrolled container instead of the viewport.
+  - Added an explicit `dashboard-project-sidebar` CSS rule so the desktop project sidebar is fixed, full-height, and flex-column from the `md` breakpoint up even if utility generation changes.
+  - Kept the existing content, header, and mobile dashboard navigation layout.
+
+- Onboarding business-hours layout pass:
+  - Reworked the Contact step business-hours controls from cramped two-column cards into a single responsive list so the day, open time, close time, and Closed checkbox stay aligned in the constrained onboarding panel.
+  - Verified the Contact step at the screenshot-width desktop layout in local test mode; each day row measured within its card with no child overflow.
+
 - Supabase signup and OTP login pass:
   - Removed the signup-time email redirect from the email/password registration path so the app works cleanly when Supabase Confirm Email is turned off.
   - Added an email OTP code flow on `/login`: users can request a one-time code, enter it in the page, and the client verifies it with Supabase `verifyOtp` before opening the requested workspace.

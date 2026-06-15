@@ -144,7 +144,7 @@ export function WaasDashboard({ data, siteUrl, initialSection = "overview" }: { 
   }
 
   return (
-    <main className="ui-enter flex min-h-screen bg-[linear-gradient(180deg,#f8fafc_0%,#eef2f7_100%)] text-foreground">
+    <main className="flex min-h-screen bg-[linear-gradient(180deg,#f8fafc_0%,#eef2f7_100%)] text-foreground">
       <ProjectSidebar
         activeSection={activeSection}
         collapsed={collapsed}
@@ -325,7 +325,7 @@ function ProjectSidebar({
   const [openGroups, setOpenGroups] = useState<Record<string, boolean>>({ website: true });
 
   return (
-    <aside className={cn("fixed left-0 top-0 z-40 hidden h-dvh flex-col overflow-hidden overscroll-none border-r border-[#e6eaef] bg-[#f4f7fa] text-foreground shadow-[18px_0_48px_rgba(15,23,42,0.06)] transition-all duration-300 ease-out md:flex", collapsed ? "w-[78px]" : "w-[280px]")}>
+    <aside className={cn("dashboard-project-sidebar z-40 overflow-hidden overscroll-none border-r border-[#e6eaef] bg-[#f4f7fa] text-foreground shadow-[18px_0_48px_rgba(15,23,42,0.06)] transition-all duration-300 ease-out", collapsed ? "w-[78px]" : "w-[280px]")}>
       <div className="flex h-24 shrink-0 items-center justify-between border-b border-[#e6eaef] px-5">
         <div className="flex min-w-0 items-center gap-3">
           <SiteRentMark />

@@ -797,25 +797,26 @@ export default function OnboardingPage() {
                     ))}
                   </select>
                 </label>
-                <div className="grid gap-2 md:grid-cols-2">
+                <div className="grid gap-3">
                   {WEEK_DAYS.map((day) => (
-                    <div key={day} className="grid grid-cols-2 items-center gap-2 rounded-lg border border-border bg-background p-3 text-sm sm:grid-cols-[1fr_84px_84px_70px]">
-                      <span className="font-semibold">{day}</span>
+                    <div key={day} className="flex flex-wrap items-center gap-3 rounded-lg border border-border bg-background p-3 text-sm">
+                      <span className="min-w-24 flex-1 font-semibold">{day}</span>
                       <input
-                        className="h-9 rounded-lg border border-border bg-card px-2 text-sm outline-none disabled:bg-secondary"
+                        className="h-9 w-[88px] rounded-lg border border-border bg-card px-2 text-sm outline-none disabled:bg-secondary"
                         value={form.hours[day]?.open ?? "08:00"}
                         disabled={form.hours[day]?.closed}
                         onChange={(event) => updateHour(day, "open", event.target.value)}
                       />
                       <input
-                        className="h-9 rounded-lg border border-border bg-card px-2 text-sm outline-none disabled:bg-secondary"
+                        className="h-9 w-[88px] rounded-lg border border-border bg-card px-2 text-sm outline-none disabled:bg-secondary"
                         value={form.hours[day]?.close ?? "17:00"}
                         disabled={form.hours[day]?.closed}
                         onChange={(event) => updateHour(day, "close", event.target.value)}
                       />
-                      <label className="flex items-center gap-1 text-xs font-semibold text-muted-foreground">
+                      <label className="ml-auto inline-flex min-w-[72px] items-center justify-end gap-1.5 whitespace-nowrap text-xs font-semibold text-muted-foreground">
                         <input
                           type="checkbox"
+                          className="size-4 shrink-0"
                           checked={form.hours[day]?.closed ?? false}
                           onChange={(event) => updateHour(day, "closed", event.target.checked)}
                         />

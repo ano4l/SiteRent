@@ -79,6 +79,20 @@ a {
   text-decoration: none;
 }
 
+.dashboard-project-sidebar {
+  display: none;
+}
+
+@media (min-width: 768px) {
+  .dashboard-project-sidebar {
+    position: fixed;
+    inset: 0 auto 0 0;
+    display: flex;
+    height: 100dvh;
+    flex-direction: column;
+  }
+}
+
 button,
 input,
 select,
